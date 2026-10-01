@@ -13,7 +13,6 @@ from database import get_connection, render_sidebar
 # Page Configuration
 st.set_page_config(
     page_title="CGPA Calculator - Campus Companion",
-    page_icon="🎯",
     layout="wide"
 )
 
@@ -21,7 +20,7 @@ st.set_page_config(
 role = render_sidebar()
 conn = get_connection()
 
-st.title("🎯 CGPA & SGPA Calculator")
+st.title(" CGPA & SGPA Calculator")
 st.caption("10-point Indian UGC/AICTE grading system calculator, semester progression tracker, and target CGPA planner.")
 
 # Standard 10-Point Grade Map
@@ -71,7 +70,9 @@ if not grades_df.empty:
 sem_summary_df = pd.DataFrame(sem_groups)
 
 # Top Metric Banner
-c1, c2, c3, c4 = st.columns(4)
+c1, c2 = st.columns(2)
+st.write('')
+c3, c4 = st.columns(2)
 with c1:
     st.metric("Cumulative CGPA", f"{cgpa:.2f} / 10.0", delta=f"{cgpa - 8.0:+.2f} vs 8.0 distinction")
 with c2:
@@ -87,8 +88,8 @@ with c4:
 st.divider()
 
 tab_overview, tab_planner, tab_manager = st.tabs([
-    "📈 Academic Progression & Breakdown",
-    "🔮 Target CGPA Forecaster",
+    " Academic Progression & Breakdown",
+    " Target CGPA Forecaster",
     "⚙️ Manage Course Grades"
 ])
 
@@ -134,7 +135,7 @@ with tab_overview:
                 hide_index=True
             )
 
-        st.subheader("📚 Detailed Course Breakdown")
+        st.subheader(" Detailed Course Breakdown")
         if not sem_summary_df.empty:
             selected_sem = st.selectbox("Inspect Courses for Semester:", sem_summary_df["semester"].tolist())
             sem_courses = grades_df[grades_df["semester"] == selected_sem]
@@ -157,7 +158,7 @@ with tab_overview:
 
 # --- TAB 2: TARGET CGPA FORECASTER ---
 with tab_planner:
-    st.subheader("🔮 Target CGPA Planner & Feasibility Forecaster")
+    st.subheader(" Target CGPA Planner & Feasibility Forecaster")
     st.write("Determine exactly what average SGPA you must score in remaining semesters to achieve your goal.")
 
     col_p1, col_p2 = st.columns([1, 1], gap="large")
@@ -183,19 +184,19 @@ with tab_planner:
 
     with col_p2:
         with st.container(border=True):
-            st.markdown("#### 🎯 Feasibility Outcome")
+            st.markdown("####  Feasibility Outcome")
             st.metric("Required Average SGPA", f"{required_future_sgpa:.2f} / 10.0")
             
             if required_future_sgpa <= 0:
-                st.success("🎉 You have already exceeded this CGPA goal! Maintaining passing grades is sufficient.")
+                st.success(" You have already exceeded this CGPA goal! Maintaining passing grades is sufficient.")
             elif required_future_sgpa <= 8.5:
-                st.success(f"✅ **Easily Achievable!** You need an average SGPA of **{required_future_sgpa:.2f}** over the next **{rem_sems_input}** semesters (A / B+ grade profile).")
+                st.success(f" **Easily Achievable!** You need an average SGPA of **{required_future_sgpa:.2f}** over the next **{rem_sems_input}** semesters (A / B+ grade profile).")
             elif required_future_sgpa <= 9.5:
                 st.warning(f"⚠️ **Challenging but Achievable!** You need an average SGPA of **{required_future_sgpa:.2f}** (mostly A+ and O grades required).")
             elif required_future_sgpa <= 10.0:
-                st.error(f"🚨 **Extreme Difficulty!** You need nearly perfect 10.0 SGPA (**{required_future_sgpa:.2f}**) across every upcoming semester.")
+                st.error(f" **Extreme Difficulty!** You need nearly perfect 10.0 SGPA (**{required_future_sgpa:.2f}**) across every upcoming semester.")
             else:
-                st.error(f"❌ **Mathematically Impossible!** Scoring {required_future_sgpa:.2f} exceeds the maximum possible 10.0 limit. Consider adjusting your target CGPA to a realistic figure like {min(10.0, (total_grade_points + 10.0 * future_credits) / total_graduation_credits):.2f}.")
+                st.error(f" **Mathematically Impossible!** Scoring {required_future_sgpa:.2f} exceeds the maximum possible 10.0 limit. Consider adjusting your target CGPA to a realistic figure like {min(10.0, (total_grade_points + 10.0 * future_credits) / total_graduation_credits):.2f}.")
 
 # --- TAB 3: MANAGE COURSE GRADES ---
 with tab_manager:
@@ -232,7 +233,7 @@ with tab_manager:
                     st.rerun()
 
     with col_m2:
-        st.markdown("#### 🗑️ Delete Course Grade Entry")
+        st.markdown("#### ️ Delete Course Grade Entry")
         if not grades_df.empty:
             grade_dict = {
                 f"#{r['id']} [Sem {r['semester']}] {r['course_code']} - {r['course_name']} ({r['grade_letter']})": r['id']

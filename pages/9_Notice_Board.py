@@ -12,7 +12,6 @@ from database import get_connection, render_sidebar
 # Page Configuration
 st.set_page_config(
     page_title="Notice Board - Campus Companion",
-    page_icon="📌",
     layout="wide"
 )
 
@@ -20,10 +19,10 @@ st.set_page_config(
 role = render_sidebar()
 conn = get_connection()
 
-st.title("📌 Campus Notice Board & Circulars")
+st.title(" Campus Notice Board & Circulars")
 st.caption("Official university circulars, examination notifications, placement drives, and administrative alerts.")
 
-current_date_str = "2026-09-24"
+current_date_str = datetime.now().strftime("%Y-%m-%d")
 today_dt = datetime.strptime(current_date_str, "%Y-%m-%d")
 
 # Fetch Notices
@@ -35,7 +34,9 @@ ORDER BY is_pinned DESC, published_date DESC;
 notices_df = pd.read_sql_query(notices_query, conn)
 
 # Top Metric Banner
-n1, n2, n3, n4 = st.columns(4)
+n1, n2 = st.columns(2)
+st.write('')
+n3, n4 = st.columns(2)
 with n1:
     st.metric("Total Circulars", f"{len(notices_df)} Notices")
 with n2:
@@ -50,7 +51,7 @@ with n4:
 
 st.divider()
 
-tab_bulletin, tab_admin = st.tabs(["📢 Notice Bulletin", "⚙️ Admin Notice Publisher"])
+tab_bulletin, tab_admin = st.tabs([" Notice Bulletin", "⚙️ Admin Notice Publisher"])
 
 # --- TAB 1: NOTICE BULLETIN ---
 with tab_bulletin:
@@ -77,20 +78,20 @@ with tab_bulletin:
     regular_matches = filtered_notices[filtered_notices["is_pinned"] == 0]
 
     if not pinned_matches.empty:
-        st.markdown("### 📌 Pinned High-Priority Announcements")
+        st.markdown("###  Pinned High-Priority Announcements")
         for _, p_not in pinned_matches.iterrows():
             with st.container(border=True):
                 p_c1, p_c2 = st.columns([3, 1])
                 with p_c1:
-                    st.markdown(f"#### 🚨 [{p_not['category']}] {p_not['title']}")
-                    st.caption(f"🗓️ Published: **{p_not['published_date']}** | 🎯 Target: `{p_not['target_audience']}`")
+                    st.markdown(f"####  [{p_not['category']}] {p_not['title']}")
+                    st.caption(f"️ Published: **{p_not['published_date']}** |  Target: `{p_not['target_audience']}`")
                     st.write(p_not['content'])
                 with p_c2:
-                    st.warning("📌 **PINNED NOTICE**")
+                    st.warning(" **PINNED NOTICE**")
                     if p_not['category'] == "Urgent":
                         st.error("⚠️ Immediate Attention")
 
-    st.markdown(f"### 📋 General Circulars ({len(regular_matches)})")
+    st.markdown(f"###  General Circulars ({len(regular_matches)})")
     if regular_matches.empty and pinned_matches.empty:
         st.info("No notices match the selected criteria.")
     else:
@@ -99,22 +100,22 @@ with tab_bulletin:
                 n_c1, n_c2 = st.columns([3, 1])
                 with n_c1:
                     st.markdown(f"#### [{noti['category']}] {noti['title']}")
-                    st.caption(f"🗓️ Published: **{noti['published_date']}** | 🎯 Target: `{noti['target_audience']}`")
+                    st.caption(f"️ Published: **{noti['published_date']}** |  Target: `{noti['target_audience']}`")
                     st.write(noti['content'])
                 with n_c2:
                     if noti['category'] == 'Exam':
-                        st.info("📝 Examination Cell")
+                        st.info(" Examination Cell")
                     elif noti['category'] == 'Placement':
-                        st.success("💼 Placement Cell")
+                        st.success(" Placement Cell")
                     elif noti['category'] == 'Hostel':
-                        st.caption("🏢 Hostel Wardens")
+                        st.caption(" Hostel Wardens")
                     else:
-                        st.caption("🏛️ General Admin")
+                        st.caption("️ General Admin")
 
 # --- TAB 2: ADMIN NOTICE PUBLISHER ---
 with tab_admin:
     if role == "Admin":
-        st.subheader("⚡ Master Notice Board Operations")
+        st.subheader(" Master Notice Board Operations")
         st.write("Publish official notifications or retract outdated circulars.")
 
         col_post, col_remove = st.columns([1, 1], gap="large")
@@ -126,7 +127,7 @@ with tab_admin:
                 new_n_cat = st.selectbox("Category:", ["Urgent", "Academic", "Exam", "Placement", "Hostel", "General"])
                 new_n_target = st.text_input("Target Audience:", value="All Students")
                 new_n_content = st.text_area("Official Circular Content:", height=150)
-                new_n_pin = st.checkbox("📌 Pin to Top of Notice Board", value=False)
+                new_n_pin = st.checkbox(" Pin to Top of Notice Board", value=False)
 
                 publish_btn = st.form_submit_button("Broadcast Notice")
                 if publish_btn:
@@ -143,7 +144,7 @@ with tab_admin:
                         st.rerun()
 
         with col_remove:
-            st.markdown("#### 🗑️ Delete or Retract Circular")
+            st.markdown("#### ️ Delete or Retract Circular")
             if not notices_df.empty:
                 del_notice_map = {f"#{r['id']} - {r['title']} ({r['published_date']})": r['id'] for _, r in notices_df.iterrows()}
                 sel_del_notice = st.selectbox("Select Circular to Delete:", list(del_notice_map.keys()))
@@ -158,7 +159,7 @@ with tab_admin:
             else:
                 st.info("No notices to delete.")
     else:
-        st.info("🔒 **Admin Access Required**")
+        st.info(" **Admin Access Required**")
         st.write("Switch user role to **Admin** in the sidebar to publish or remove official notices.")
 
 conn.close()

@@ -11,7 +11,6 @@ from database import get_connection, render_sidebar
 # Page Configuration
 st.set_page_config(
     page_title="Faculty Directory - Campus Companion",
-    page_icon="👨‍🏫",
     layout="wide"
 )
 
@@ -19,7 +18,7 @@ st.set_page_config(
 role = render_sidebar()
 conn = get_connection()
 
-st.title("👨‍🏫 Faculty Directory & Office Hours")
+st.title("‍ Faculty Directory & Office Hours")
 st.caption("Contact information, cabin locations, consultation hours, and academic consultation appointments.")
 
 # Fetch Faculty Members
@@ -31,7 +30,9 @@ ORDER BY name ASC;
 faculty_df = pd.read_sql_query(faculty_query, conn)
 
 # Top Metric Banner
-f1, f2, f3, f4 = st.columns(4)
+f1, f2 = st.columns(2)
+st.write('')
+f3, f4 = st.columns(2)
 with f1:
     st.metric("Total Faculty", f"{len(faculty_df)} Professors")
 with f2:
@@ -46,8 +47,8 @@ with f4:
 st.divider()
 
 tab_directory, tab_consult, tab_admin = st.tabs([
-    "📚 Faculty Profiles",
-    "📅 Request Office Consultation",
+    " Faculty Profiles",
+    " Request Office Consultation",
     "⚙️ Manage Faculty (Admin)"
 ])
 
@@ -84,14 +85,14 @@ with tab_directory:
                 with st.container(border=True):
                     st.markdown(f"### {prof['name']}")
                     st.caption(f"**{prof['designation']}** • Dept of **{prof['department']}**")
-                    st.markdown(f"📍 Cabin: **{prof['room']}**")
-                    st.markdown(f"🕒 Consultation Hours: **{prof['cabin_hours']}**")
-                    st.markdown(f"📖 Specializations: *{prof['subjects_taught']}*")
-                    st.caption(f"✉️ [{prof['email']}](mailto:{prof['email']}) | 📞 {prof['phone']}")
+                    st.markdown(f" Cabin: **{prof['room']}**")
+                    st.markdown(f" Consultation Hours: **{prof['cabin_hours']}**")
+                    st.markdown(f" Specializations: *{prof['subjects_taught']}*")
+                    st.caption(f"✉️ [{prof['email']}](mailto:{prof['email']}) |  {prof['phone']}")
 
 # --- TAB 2: REQUEST OFFICE CONSULTATION ---
 with tab_consult:
-    st.subheader("📅 Schedule an Academic Consultation / Doubt Session")
+    st.subheader(" Schedule an Academic Consultation / Doubt Session")
     st.write("Book a 15-minute consultation slot during the faculty member's official office hours.")
 
     fac_map = {f"{r['name']} ({r['department']} - Cabin: {r['room']})": r['id'] for _, r in faculty_df.iterrows()}
@@ -109,14 +110,14 @@ with tab_consult:
                 if not req_topic:
                     st.error("Please provide a discussion topic.")
                 else:
-                    st.success(f"🎉 Consultation request forwarded to {sel_prof.split(' (')[0]}! They will confirm via institutional email.")
+                    st.success(f" Consultation request forwarded to {sel_prof.split(' (')[0]}! They will confirm via institutional email.")
     else:
         st.info("No faculty profiles registered yet.")
 
 # --- TAB 3: MANAGE FACULTY (ADMIN) ---
 with tab_admin:
     if role == "Admin":
-        st.subheader("⚡ Master Faculty Records Management")
+        st.subheader(" Master Faculty Records Management")
         st.write("Register new faculty appointments or update cabin allocations.")
 
         col_add_f, col_del_f = st.columns([1, 1], gap="large")
@@ -148,7 +149,7 @@ with tab_admin:
                         st.rerun()
 
         with col_del_f:
-            st.markdown("#### 🗑️ Delete Faculty Record")
+            st.markdown("#### ️ Delete Faculty Record")
             if not faculty_df.empty:
                 del_f_map = {f"#{r['id']} {r['name']} ({r['department']})": r['id'] for _, r in faculty_df.iterrows()}
                 sel_del_f = st.selectbox("Select Faculty to Remove:", list(del_f_map.keys()))
@@ -163,7 +164,7 @@ with tab_admin:
             else:
                 st.info("No faculty to delete.")
     else:
-        st.info("🔒 **Admin Access Required**")
+        st.info(" **Admin Access Required**")
         st.write("Switch user role to **Admin** in the sidebar to add or remove faculty records.")
 
 conn.close()

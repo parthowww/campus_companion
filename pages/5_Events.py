@@ -13,7 +13,6 @@ from database import get_connection, render_sidebar
 # Page Configuration
 st.set_page_config(
     page_title="College Events - Campus Companion",
-    page_icon="🎪",
     layout="wide"
 )
 
@@ -21,10 +20,10 @@ st.set_page_config(
 role = render_sidebar()
 conn = get_connection()
 
-st.title("🎪 Campus Events & Festivals")
+st.title(" Campus Events & Festivals")
 st.caption("Central hub for university symposiums, hackathons, cultural festivals, and athletic tournaments.")
 
-current_date_str = "2026-09-24"
+current_date_str = datetime.now().strftime("%Y-%m-%d")
 today_dt = datetime.strptime(current_date_str, "%Y-%m-%d")
 
 # Fetch Events
@@ -37,7 +36,9 @@ events_df = pd.read_sql_query(events_query, conn)
 events_df["date_obj"] = pd.to_datetime(events_df["date"])
 
 # Top Metric Banner
-e1, e2, e3, e4 = st.columns(4)
+e1, e2 = st.columns(2)
+st.write('')
+e3, e4 = st.columns(2)
 with e1:
     st.metric("Total Events", f"{len(events_df)} Active")
 with e2:
@@ -53,7 +54,7 @@ with e4:
 st.divider()
 
 # Tab Navigation
-tab_browse, tab_timeline, tab_admin = st.tabs(["🎉 Explore Events", "📊 Event Calendar Visual", "⚙️ Admin Event Management"])
+tab_browse, tab_timeline, tab_admin = st.tabs([" Explore Events", " Event Calendar Visual", "⚙️ Admin Event Management"])
 
 # --- TAB 1: EXPLORE EVENTS ---
 with tab_browse:
@@ -88,24 +89,24 @@ with tab_browse:
                 col_info, col_action = st.columns([3, 1], gap="medium")
                 with col_info:
                     st.markdown(f"### {ev['title']}")
-                    st.caption(f"🗓️ **{ev['date_obj'].strftime('%A, %d %B %Y')}** at **{ev['time']}** | 📍 Venue: **{ev['venue']}**")
+                    st.caption(f"️ **{ev['date_obj'].strftime('%A, %d %B %Y')}** at **{ev['time']}** |  Venue: **{ev['venue']}**")
                     st.caption(f"Organized by: **{ev['organizer']}** | Category: `{ev['category']}`")
                     st.write(ev['description'])
 
                 with col_action:
-                    st.markdown(f"👥 **{ev['rsvp_count']}** registered")
+                    st.markdown(f" **{ev['rsvp_count']}** registered")
                     
                     # RSVP Button for Students & Admins
                     rsvp_key = f"rsvp_{ev['id']}"
-                    if st.button("🎟️ RSVP / Register", key=rsvp_key, use_container_width=True):
+                    if st.button("️ RSVP / Register", key=rsvp_key, use_container_width=True):
                         cursor = conn.cursor()
                         cursor.execute("UPDATE events SET rsvp_count = rsvp_count + 1 WHERE id = ?;", (ev["id"],))
                         conn.commit()
-                        st.toast(f"🎉 Registered for {ev['title']}!")
+                        st.toast(f" Registered for {ev['title']}!")
                         st.rerun()
 
                     if ev["registration_url"]:
-                        st.link_button("🌐 External Portal", ev["registration_url"], use_container_width=True)
+                        st.link_button(" External Portal", ev["registration_url"], use_container_width=True)
 
 # --- TAB 2: EVENT CALENDAR VISUAL ---
 with tab_timeline:
@@ -133,7 +134,7 @@ with tab_timeline:
 # --- TAB 3: ADMIN EVENT MANAGEMENT ---
 with tab_admin:
     if role == "Admin":
-        st.subheader("⚡ Master Event Operations")
+        st.subheader(" Master Event Operations")
         st.write("Publish new university events, modify event venues, or remove cancelled entries.")
 
         col_new, col_mod = st.columns([1, 1], gap="large")
@@ -165,7 +166,7 @@ with tab_admin:
                         st.rerun()
 
         with col_mod:
-            st.markdown("#### 🗑️ Edit or Delete Event")
+            st.markdown("#### ️ Edit or Delete Event")
             if not events_df.empty:
                 event_dict = {f"#{r['id']} - {r['title']} ({r['date']})": r['id'] for _, r in events_df.iterrows()}
                 selected_event_label = st.selectbox("Select Event to Manage:", list(event_dict.keys()))
@@ -202,7 +203,7 @@ with tab_admin:
             else:
                 st.info("No events to edit.")
     else:
-        st.info("🔒 **Admin Access Required**")
+        st.info(" **Admin Access Required**")
         st.write("Switch user role to **Admin** in the sidebar to publish or modify campus events.")
 
 conn.close()

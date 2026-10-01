@@ -10,7 +10,6 @@ from database import get_connection, render_sidebar, get_subject_color
 # Page Configuration
 st.set_page_config(
     page_title="Campus Companion - Home Dashboard",
-    page_icon="🎓",
     layout="wide"
 )
 
@@ -21,14 +20,14 @@ role = render_sidebar()
 conn = get_connection()
 
 # Current date and time logic
-current_date_str = "2026-09-24"
+current_date_str = date.today().strftime("%Y-%m-%d")
 today_dt = datetime.strptime(current_date_str, "%Y-%m-%d")
 day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 current_day_name = day_names[today_dt.weekday()]
 
 # Header
-st.title("🎓 Campus Companion — Student Command Center")
-st.caption(f"📅 Today: **{current_day_name}, September 24, 2026** | Term: **Odd Semester 2026 (Semester 3)** | Role: **{role}**")
+st.title(" Campus Companion — Student Command Center")
+st.caption(f" Today: **{current_day_name}, September 24, 2026** | Term: **Odd Semester 2026 (Semester 3)** | Role: **{role}**")
 
 # --- KPI METRICS SECTION ---
 # 1. CGPA Calculation
@@ -73,7 +72,9 @@ events_df = pd.read_sql_query("SELECT id, title, date FROM events WHERE date >= 
 upcoming_events_count = len(events_df)
 
 # Render Metric Cards
-m1, m2, m3, m4, m5 = st.columns(5)
+
+# Render Metric Cards
+m1, m2, m3 = st.columns(3)
 with m1:
     st.metric(
         label="Cumulative CGPA",
@@ -95,6 +96,9 @@ with m3:
         value=holiday_metric_val,
         delta=holiday_delta_val
     )
+
+st.write("") # Some spacing
+m4, m5, _ = st.columns([1, 1, 1])
 with m4:
     st.metric(
         label="Pending Assignments",
@@ -109,13 +113,15 @@ with m5:
         delta="This semester"
     )
 
+
 st.divider()
+
 
 # --- MAIN DASHBOARD LAYOUT (2 COLUMNS) ---
 left_col, right_col = st.columns([3, 2], gap="large")
 
 with left_col:
-    st.subheader("📅 Today's Class Schedule")
+    st.subheader(" Today's Class Schedule")
     
     # Day selector allowing fresh view or previewing another day
     selected_day = st.selectbox(
@@ -138,22 +144,22 @@ with left_col:
     today_schedule_df = pd.read_sql_query(day_schedule_query, conn, params=(selected_day,))
 
     if today_schedule_df.empty:
-        st.info(f"🎉 No lectures scheduled for {selected_day}! Enjoy your self-study time or club activities.")
+        st.info(f" No lectures scheduled for {selected_day}! Enjoy your self-study time or club activities.")
     else:
         for idx, row in today_schedule_df.iterrows():
             with st.container(border=True):
                 c1, c2, c3 = st.columns([1.5, 3, 2])
                 with c1:
-                    st.markdown(f"**⏰ {row['start_time']} - {row['end_time']}**")
+                    st.markdown(f"** {row['start_time']} - {row['end_time']}**")
                     st.caption(f"Type: `{row['session_type']}`")
                 with c2:
                     st.markdown(f"**{row['subject_code']} - {row['subject_name']}**")
-                    st.caption(f"👨‍🏫 Faculty: **{row['faculty_name'] or 'Department Staff'}**")
+                    st.caption(f"‍ Faculty: **{row['faculty_name'] or 'Department Staff'}**")
                 with c3:
-                    st.markdown(f"📍 Room: **{row['room']}**")
+                    st.markdown(f" Room: **{row['room']}**")
                     st.caption("Floor directions available in Campus Map")
 
-    st.subheader("📊 Subject-Wise Attendance Status")
+    st.subheader(" Subject-Wise Attendance Status")
     sub_att_query = """
     SELECT 
         s.name AS subject_name, s.code AS subject_code,
@@ -201,7 +207,7 @@ with left_col:
         st.info("No attendance records logged yet.")
 
 with right_col:
-    st.subheader("📢 Urgent Notices & Circulars")
+    st.subheader(" Urgent Notices & Circulars")
     notices_query = """
     SELECT title, category, published_date, content, target_audience
     FROM notices
@@ -212,11 +218,11 @@ with right_col:
     notices_df = pd.read_sql_query(notices_query, conn)
     
     for _, notice in notices_df.iterrows():
-        with st.expander(f"🔴 [{notice['category']}] {notice['title']}", expanded=True):
-            st.caption(f"🗓️ Posted: {notice['published_date']} | Audience: `{notice['target_audience']}`")
+        with st.expander(f" [{notice['category']}] {notice['title']}", expanded=True):
+            st.caption(f"️ Posted: {notice['published_date']} | Audience: `{notice['target_audience']}`")
             st.write(notice["content"])
 
-    st.subheader("📈 Academic SGPA Trend")
+    st.subheader(" Academic SGPA Trend")
     sem_query = """
     SELECT semester, SUM(credits * grade_points) / SUM(credits) as sgpa
     FROM student_grades
@@ -243,19 +249,19 @@ with right_col:
         )
         st.plotly_chart(fig_sgpa, use_container_width=True)
 
-    st.subheader("⚡ Quick Navigation Portal")
+    st.subheader(" Quick Navigation Portal")
     q1, q2 = st.columns(2)
     with q1:
-        st.page_link("pages/1_Class_Schedule.py", label="Weekly Timetable", icon="🗓️")
-        st.page_link("pages/2_Attendance.py", label="Attendance Tracker", icon="📊")
-        st.page_link("pages/4_Campus_Map.py", label="Campus Map & Rooms", icon="🗺️")
-        st.page_link("pages/7_Assignments.py", label="Assignments", icon="📝")
-        st.page_link("pages/8_CGPA_Calculator.py", label="CGPA Predictor", icon="🎯")
+        st.page_link("pages/1_Class_Schedule.py", label="Weekly Timetable")
+        st.page_link("pages/2_Attendance.py", label="Attendance Tracker")
+        st.page_link("pages/4_Campus_Map.py", label="Campus Map & Rooms")
+        st.page_link("pages/7_Assignments.py", label="Assignments")
+        st.page_link("pages/8_CGPA_Calculator.py", label="CGPA Predictor")
     with q2:
-        st.page_link("pages/3_Holidays.py", label="Holiday Countdown", icon="🏖️")
-        st.page_link("pages/5_Events.py", label="College Events", icon="🎪")
-        st.page_link("pages/6_Club_Events.py", label="Clubs & Societies", icon="🚀")
-        st.page_link("pages/9_Notice_Board.py", label="Notice Board", icon="📌")
-        st.page_link("pages/10_Faculty_Directory.py", label="Faculty Directory", icon="👨‍🏫")
+        st.page_link("pages/3_Holidays.py", label="Holiday Countdown")
+        st.page_link("pages/5_Events.py", label="College Events")
+        st.page_link("pages/6_Club_Events.py", label="Clubs & Societies")
+        st.page_link("pages/9_Notice_Board.py", label="Notice Board")
+        st.page_link("pages/10_Faculty_Directory.py", label="Faculty Directory")
 
 conn.close()

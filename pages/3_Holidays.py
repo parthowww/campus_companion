@@ -13,7 +13,6 @@ from database import get_connection, render_sidebar
 # Page Configuration
 st.set_page_config(
     page_title="Holiday Tracker - Campus Companion",
-    page_icon="🏖️",
     layout="wide"
 )
 
@@ -21,11 +20,11 @@ st.set_page_config(
 role = render_sidebar()
 conn = get_connection()
 
-st.title("🏖️ Holiday Tracker & Countdown")
+st.title("️ Holiday Tracker & Countdown")
 st.caption("Official university calendar distinguishing National Holidays and College-Specific Off Days.")
 
 # Current Date Logic
-current_date_str = "2026-09-24"
+current_date_str = date.today().strftime("%Y-%m-%d")
 today_dt = datetime.strptime(current_date_str, "%Y-%m-%d")
 
 # Fetch Holidays
@@ -51,7 +50,9 @@ else:
     next_hol_cat = "N/A"
     next_hol_date = "N/A"
 
-h1, h2, h3, h4 = st.columns(4)
+h1, h2 = st.columns(2)
+st.write('')
+h3, h4 = st.columns(2)
 with h1:
     st.metric(
         label=f"Next Holiday: {next_hol_name[:18]}",
@@ -85,7 +86,7 @@ if selected_month != "All Months":
 if selected_cat != "All Categories":
     filtered_holidays = filtered_holidays[filtered_holidays["category"] == selected_cat]
 
-tab_list, tab_visual, tab_admin = st.tabs(["📅 Holiday Calendar Cards", "📊 Timeline & Distribution", "⚙️ Admin Holiday Manager"])
+tab_list, tab_visual, tab_admin = st.tabs([" Holiday Calendar Cards", " Timeline & Distribution", "⚙️ Admin Holiday Manager"])
 
 # --- TAB 1: HOLIDAY CARDS ---
 with tab_list:
@@ -98,20 +99,20 @@ with tab_list:
                 c1, c2, c3 = st.columns([1.5, 3, 1.5])
                 with c1:
                     st.markdown(f"### {hol['date_obj'].strftime('%d %b %Y')}")
-                    st.caption(f"🗓️ {hol['date_obj'].strftime('%A')}")
+                    st.caption(f"️ {hol['date_obj'].strftime('%A')}")
                 with c2:
                     st.markdown(f"**{hol['name']}**")
                     st.write(hol['description'] or "Official academic holiday.")
                 with c3:
                     if hol['category'] == "National":
-                        st.success("🇮🇳 National Holiday")
+                        st.success(" National Holiday")
                     else:
-                        st.info("🏫 College-Specific")
+                        st.info(" College-Specific")
 
                     if hol['days_away'] > 0:
-                        st.caption(f"⏳ **In {hol['days_away']} days**")
+                        st.caption(f" **In {hol['days_away']} days**")
                     elif hol['days_away'] == 0:
-                        st.warning("🎉 **Today is Holiday!**")
+                        st.warning(" **Today is Holiday!**")
                     else:
                         st.caption(f"Passed ({abs(hol['days_away'])} days ago)")
 
@@ -141,7 +142,7 @@ with tab_visual:
 # --- TAB 3: ADMIN HOLIDAY MANAGER ---
 with tab_admin:
     if role == "Admin":
-        st.subheader("⚡ Manage Academic Holiday List")
+        st.subheader(" Manage Academic Holiday List")
         st.write("Add new institute off-days or remove cancelled holidays.")
 
         col_add, col_del = st.columns([1, 1], gap="large")
@@ -169,7 +170,7 @@ with tab_admin:
                         st.rerun()
 
         with col_del:
-            st.markdown("#### 🗑️ Delete Existing Holiday")
+            st.markdown("#### ️ Delete Existing Holiday")
             if not holidays_df.empty:
                 hol_options = {f"{h['name']} ({h['date']})": h['id'] for _, h in holidays_df.iterrows()}
                 selected_hol_label = st.selectbox("Select Holiday to Delete:", list(hol_options.keys()))
@@ -184,7 +185,7 @@ with tab_admin:
             else:
                 st.info("No holidays available to delete.")
     else:
-        st.info("🔒 **Admin Access Required**")
+        st.info(" **Admin Access Required**")
         st.write("Switch role to **Admin** in the sidebar to publish or remove holidays.")
 
 conn.close()

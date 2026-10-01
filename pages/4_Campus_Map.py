@@ -12,7 +12,6 @@ from database import get_connection, render_sidebar
 # Page Configuration
 st.set_page_config(
     page_title="Campus Map & Finder - Campus Companion",
-    page_icon="🗺️",
     layout="wide"
 )
 
@@ -20,7 +19,7 @@ st.set_page_config(
 role = render_sidebar()
 conn = get_connection()
 
-st.title("🗺️ Campus Map & Room Navigator")
+st.title("️ Campus Map & Room Navigator")
 st.caption("Fresher-friendly location directory, step-by-step walking routes, and 2D schematic campus guide.")
 
 # Fetch Rooms & Buildings
@@ -41,15 +40,15 @@ ORDER BY s.code, cs.day_of_week;
 sched_rooms_df = pd.read_sql_query(sched_rooms_query, conn)
 
 tab_finder, tab_map, tab_directory, tab_manage = st.tabs([
-    "🧭 Find My Class / Room",
-    "🗺️ Interactive 2D Campus Map",
-    "🏢 Floor-by-Floor Directory",
+    " Find My Class / Room",
+    "️ Interactive 2D Campus Map",
+    " Floor-by-Floor Directory",
     "⚙️ Manage Room Directory"
 ])
 
 # --- TAB 1: FIND MY CLASS / ROOM ---
 with tab_finder:
-    st.subheader("🧭 Freshers' Class & Venue Locator")
+    st.subheader(" Freshers' Class & Venue Locator")
     st.write("Never get lost again! Search by your course or room number to get precise floor directions.")
 
     find_mode = st.radio(
@@ -69,7 +68,7 @@ with tab_finder:
             
             st.markdown(f"#### Timetable Allocations for `{s_code}`:")
             for _, m_row in matched_sched.iterrows():
-                st.info(f"📅 **{m_row['day_of_week']}** at **{m_row['start_time']}** ➔ Allocated Venue: **{m_row['room']}** (`{m_row['session_type']}`)")
+                st.info(f" **{m_row['day_of_week']}** at **{m_row['start_time']}** ➔ Allocated Venue: **{m_row['room']}** (`{m_row['session_type']}`)")
             
             if not matched_sched.empty:
                 selected_room_target = matched_sched.iloc[0]["room"]
@@ -99,22 +98,22 @@ with tab_finder:
             r = room_info.iloc[0]
             st.write("")
             with st.container(border=True):
-                st.markdown(f"## 📍 {r['room_number']}")
+                st.markdown(f"##  {r['room_number']}")
                 st.caption(f"**{r['block_name']}** • Level: **{r['floor']}** • Type: **{r['room_type']}**")
                 
                 c_dir1, c_dir2 = st.columns([1, 1], gap="medium")
                 with c_dir1:
-                    st.markdown("#### 🚩 Nearest Landmark")
+                    st.markdown("####  Nearest Landmark")
                     st.write(r['landmark'])
                     st.metric("Seating / Lab Capacity", f"{r['capacity']} Persons")
                 with c_dir2:
-                    st.markdown("#### 🚶 Step-by-Step Directions from Main Gate")
+                    st.markdown("####  Step-by-Step Directions from Main Gate")
                     st.info(r['directions'])
                     st.caption("Tip: Look out for green directional wayfinding signage posted at all staircases and elevators.")
 
 # --- TAB 2: INTERACTIVE 2D CAMPUS SCHEMATIC MAP ---
 with tab_map:
-    st.subheader("🗺️ 2D Campus Block Schematic Map")
+    st.subheader("️ 2D Campus Block Schematic Map")
     st.caption("Interactive schematic layout of academic blocks, central facilities, and walking plazas.")
 
     # Distinct blocks coordinate representation
@@ -157,7 +156,7 @@ with tab_map:
         x=[10, 50, 95], y=[30, 90, 20],
         mode="markers+text",
         marker=dict(size=18, color="#64748B", symbol="square"),
-        text=["🚪 West Gate", "🚪 North Gate", "🚪 East Gate"],
+        text=[" West Gate", " North Gate", " East Gate"],
         textposition="top center",
         name="Campus Gates",
         hovertext="Security Checkpoints and Parking"
@@ -193,7 +192,7 @@ with tab_map:
 
 # --- TAB 3: FLOOR-BY-FLOOR DIRECTORY ---
 with tab_directory:
-    st.subheader("🏢 Comprehensive Block Directory")
+    st.subheader(" Comprehensive Block Directory")
     
     unique_blocks = rooms_df["block_name"].unique().tolist()
     sel_block = st.selectbox("Select Block to Explore:", unique_blocks)
@@ -204,7 +203,7 @@ with tab_directory:
     for fl in floors:
         fl_rooms = block_rooms[block_rooms["floor"] == fl]
         if not fl_rooms.empty:
-            st.markdown(f"#### 🪜 {fl}")
+            st.markdown(f"####  {fl}")
             for _, r in fl_rooms.iterrows():
                 with st.container(border=True):
                     c1, c2, c3 = st.columns([2, 3, 2])
@@ -212,7 +211,7 @@ with tab_directory:
                         st.markdown(f"**{r['room_number']}**")
                         st.caption(f"Category: `{r['room_type']}`")
                     with c2:
-                        st.write(f"🚩 **Landmark:** {r['landmark']}")
+                        st.write(f" **Landmark:** {r['landmark']}")
                         st.caption(f"Capacity: {r['capacity']} seats")
                     with c3:
                         st.caption(f"Directions: {r['directions']}")
@@ -220,7 +219,7 @@ with tab_directory:
 # --- TAB 4: MANAGE ROOM DIRECTORY (ADMIN ONLY) ---
 with tab_manage:
     if role == "Admin":
-        st.subheader("⚡ Master Building & Room Management")
+        st.subheader(" Master Building & Room Management")
         st.write("Add new classrooms, update wayfinding directions, or configure landmarks.")
 
         col_a1, col_a2 = st.columns([1, 1], gap="large")
@@ -257,7 +256,7 @@ with tab_manage:
                         st.rerun()
 
         with col_a2:
-            st.markdown("#### 🗑️ Remove / Delete Room Entry")
+            st.markdown("#### ️ Remove / Delete Room Entry")
             if not rooms_df.empty:
                 room_opts = {f"{r['room_number']} ({r['block_name']})": r['id'] for _, r in rooms_df.iterrows()}
                 selected_del_room = st.selectbox("Select Venue to Delete:", list(room_opts.keys()))
@@ -272,7 +271,7 @@ with tab_manage:
             else:
                 st.info("No venues to delete.")
     else:
-        st.info("🔒 **Admin Access Required**")
+        st.info(" **Admin Access Required**")
         st.write("Switch role to **Admin** in the sidebar to register new campus venues.")
 
 conn.close()

@@ -11,7 +11,6 @@ from database import get_connection, render_sidebar, get_subject_color
 # Page Configuration
 st.set_page_config(
     page_title="Class Schedule - Campus Companion",
-    page_icon="🗓️",
     layout="wide"
 )
 
@@ -19,7 +18,7 @@ st.set_page_config(
 role = render_sidebar()
 conn = get_connection()
 
-st.title("🗓️ Class Schedule Tracker")
+st.title("️ Class Schedule Tracker")
 st.caption("Weekly timetable grid across period slots with room allocations and faculty info.")
 
 # Fetch schedule, subjects, faculty
@@ -50,7 +49,7 @@ subjects_df = pd.read_sql_query("SELECT id, code, name FROM subjects ORDER BY co
 faculty_df = pd.read_sql_query("SELECT id, name, department FROM faculty ORDER BY name;", conn)
 rooms_df = pd.read_sql_query("SELECT room_number, block_name FROM buildings_rooms ORDER BY room_number;", conn)
 
-tab_grid, tab_table, tab_manage = st.tabs(["📅 Weekly Schedule Grid", "📋 Detailed Schedule List", "⚙️ Manage Classes"])
+tab_grid, tab_table, tab_manage = st.tabs([" Weekly Schedule Grid", " Detailed Schedule List", "⚙️ Manage Classes"])
 
 # --- TAB 1: WEEKLY SCHEDULE GRID ---
 with tab_grid:
@@ -68,11 +67,11 @@ with tab_grid:
     st.write("")
     
     # View Selector
-    view_mode = st.radio("Choose Schedule Presentation:", ["📊 Styled Timetable Matrix (Grid)", "🗓️ Day-by-Day Detailed Columns"], horizontal=True)
+    view_mode = st.radio("Choose Schedule Presentation:", [" Styled Timetable Matrix (Grid)", "️ Day-by-Day Detailed Columns"], horizontal=True)
 
     days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-    if view_mode == "📊 Styled Timetable Matrix (Grid)":
+    if view_mode == " Styled Timetable Matrix (Grid)":
         # Build period slots
         sched_df["slot"] = sched_df["start_time"] + " - " + sched_df["end_time"]
         unique_slots = sorted(sched_df["slot"].unique().tolist())
@@ -115,14 +114,14 @@ with tab_grid:
                         with st.container(border=True):
                             st.markdown(f"**{cls['subject_code']}**")
                             st.caption(f"{cls['subject_name'][:20]}")
-                            st.markdown(f"🕒 `{cls['start_time']} - {cls['end_time']}`")
-                            st.caption(f"📍 {cls['room']}")
-                            st.caption(f"👨‍🏫 {cls['faculty_name'] or 'Staff'}")
+                            st.markdown(f" `{cls['start_time']} - {cls['end_time']}`")
+                            st.caption(f" {cls['room']}")
+                            st.caption(f"‍ {cls['faculty_name'] or 'Staff'}")
                             badge_label = cls['session_type']
                             if badge_label == "Lab":
-                                st.info(f"🧪 {badge_label}")
+                                st.info(f" {badge_label}")
                             else:
-                                st.success(f"📖 {badge_label}")
+                                st.success(f" {badge_label}")
 
 # --- TAB 2: DETAILED SCHEDULE LIST ---
 with tab_table:
@@ -163,7 +162,7 @@ with tab_table:
 
     csv_data = display_df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        label="📥 Download Schedule as CSV",
+        label=" Download Schedule as CSV",
         data=csv_data,
         file_name="campus_schedule_sem5.csv",
         mime="text/csv"
@@ -172,7 +171,7 @@ with tab_table:
 # --- TAB 3: MANAGE CLASSES (ADMIN ONLY) ---
 with tab_manage:
     if role == "Admin":
-        st.subheader("⚡ Master Schedule Management")
+        st.subheader(" Master Schedule Management")
         st.write("Add, update, or remove period allocations from the institutional schedule.")
 
         m_col1, m_col2 = st.columns([1, 1], gap="large")
@@ -210,11 +209,11 @@ with tab_manage:
                     VALUES (?, ?, ?, ?, ?, ?, ?);
                     """, (sub_id, day_choice, start_val, end_val, room_choice, fac_id, session_type_choice))
                     conn.commit()
-                    st.success("✅ Class added to timetable successfully! Reloading view...")
+                    st.success(" Class added to timetable successfully! Reloading view...")
                     st.rerun()
 
         with m_col2:
-            st.markdown("#### 🗑️ Edit or Delete Existing Class")
+            st.markdown("#### ️ Edit or Delete Existing Class")
             if not sched_df.empty:
                 class_dict = {
                     f"#{row['id']} [{row['day_of_week'][:3]}] {row['subject_code']} ({row['start_time']} - {row['room']})": row['id']
@@ -258,7 +257,7 @@ with tab_manage:
             else:
                 st.info("No classes found to edit.")
     else:
-        st.info("🔒 **Admin Access Required**")
+        st.info(" **Admin Access Required**")
         st.write("You are currently viewing in **Student Role**. Switching to Admin in the sidebar unlocks the class scheduling and deletion forms.")
 
 conn.close()

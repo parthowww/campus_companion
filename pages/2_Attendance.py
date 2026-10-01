@@ -13,7 +13,6 @@ from database import get_connection, render_sidebar, get_subject_color
 # Page Configuration
 st.set_page_config(
     page_title="Attendance Tracker - Campus Companion",
-    page_icon="📊",
     layout="wide"
 )
 
@@ -21,11 +20,11 @@ st.set_page_config(
 role = render_sidebar()
 conn = get_connection()
 
-st.title("📊 Attendance Tracker & Cutoff Calculator")
+st.title(" Attendance Tracker & Cutoff Calculator")
 st.caption("Live attendance monitoring compliant with university 75% mandatory attendance regulations.")
 
 # Current Date Logic
-current_date_str = "2026-09-24"
+current_date_str = date.today().strftime("%Y-%m-%d")
 today_dt = datetime.strptime(current_date_str, "%Y-%m-%d")
 day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 current_day_name = day_names[today_dt.weekday()]
@@ -85,7 +84,9 @@ for _, s in subjects_df.iterrows():
     })
 
 # --- KPI METRICS TOP BAR ---
-k1, k2, k3, k4 = st.columns(4)
+k1, k2 = st.columns(2)
+st.write('')
+k3, k4 = st.columns(2)
 with k1:
     delta_str = f"{overall_pct - 75.0:+.1f}% vs 75% cutoff"
     st.metric("Overall Attendance", f"{overall_pct:.1f}%", delta=delta_str, delta_color="normal" if overall_pct >= 75 else "inverse")
@@ -100,10 +101,10 @@ st.divider()
 
 # Navigation tabs
 tab_overview, tab_mark, tab_simulator, tab_history = st.tabs([
-    "📈 Subject Attendance Cards",
+    " Subject Attendance Cards",
     "✍️ Mark Today's Attendance",
-    "🧮 What-If Bunk Simulator",
-    "📜 Attendance Logs & History"
+    " What-If Bunk Simulator",
+    " Attendance Logs & History"
 ])
 
 # --- TAB 1: SUBJECT ATTENDANCE CARDS ---
@@ -137,13 +138,13 @@ with tab_overview:
                     st.info("ℹ️ No classes recorded yet for this subject.")
                 elif stat['percentage'] < 75.0:
                     st.error(
-                        f"🚨 **Attendance Shortage!** You must attend the next **{stat['to_attend']}** classes "
+                        f" **Attendance Shortage!** You must attend the next **{stat['to_attend']}** classes "
                         f"consecutively to cross the 75% cutoff."
                     )
                 else:
                     if stat['can_skip'] > 0:
                         st.success(
-                            f"✅ **Safe Zone!** You can safely skip up to **{stat['can_skip']}** upcoming classes "
+                            f" **Safe Zone!** You can safely skip up to **{stat['can_skip']}** upcoming classes "
                             f"and remain above 75%."
                         )
                     else:
@@ -189,7 +190,7 @@ with tab_mark:
                     sc1, sc2, sc3 = st.columns([3, 2, 2])
                     with sc1:
                         st.markdown(f"**{c_row['subject_code']} - {c_row['subject_name']}**")
-                        st.caption(f"🕒 {c_row['start_time']} - {c_row['end_time']} | 📍 {c_row['room']}")
+                        st.caption(f" {c_row['start_time']} - {c_row['end_time']} |  {c_row['room']}")
                     with sc2:
                         status_val = st.radio(
                             "Status:",
@@ -234,12 +235,12 @@ with tab_mark:
                         VALUES (?, ?, ?, ?, ?);
                         """, (data["subject_id"], date_str, data["status"], data["slot"], data["remarks"]))
                 conn.commit()
-                st.success(f"🎉 Attendance successfully recorded/updated for {len(attendance_inputs)} classes on {date_str}!")
+                st.success(f" Attendance successfully recorded/updated for {len(attendance_inputs)} classes on {date_str}!")
                 st.rerun()
 
 # --- TAB 3: WHAT-IF BUNK SIMULATOR ---
 with tab_simulator:
-    st.subheader("🧮 Bunk-o-Meter & Term Attendance Calculator")
+    st.subheader(" Bunk-o-Meter & Term Attendance Calculator")
     st.write("Plan your leaves based on remaining semester classes and simulate future attendance trajectories.")
 
     sim_sub_options = {f"{s['code']} - {s['name']}": s for s in sub_stats if s['total'] > 0}
@@ -253,7 +254,7 @@ with tab_simulator:
 
         st.info(f"Current Stats for **{selected_sub['code']}**: Attended **{current_att}** / **{current_tot}** ({current_perc:.1f}%)")
 
-        st.markdown("#### 🎯 Term-Wide Attendance Target (Based on Remaining Classes)")
+        st.markdown("####  Term-Wide Attendance Target (Based on Remaining Classes)")
         c_term1, c_term2 = st.columns(2)
         with c_term1:
             total_planned_term = st.number_input(
@@ -283,13 +284,13 @@ with tab_simulator:
 
             if must_attend_rem > remaining_in_term:
                 max_achievable = ((current_att + remaining_in_term) / total_planned_term) * 100
-                st.error(f"🚨 **Mathematical Shortage!** Even attending 100% of remaining {remaining_in_term} classes will reach only {max_achievable:.1f}%. Immediate faculty appeal needed.")
+                st.error(f" **Mathematical Shortage!** Even attending 100% of remaining {remaining_in_term} classes will reach only {max_achievable:.1f}%. Immediate faculty appeal needed.")
             elif must_attend_rem == 0:
-                st.success(f"🎉 **Deficit Impossible!** You have already attended enough classes to satisfy the 75% rule for the whole term.")
+                st.success(f" **Deficit Impossible!** You have already attended enough classes to satisfy the 75% rule for the whole term.")
             else:
-                st.info(f"📌 **Term Recommendation:** Attend at least **{must_attend_rem}** out of the next **{remaining_in_term}** lectures to guarantee exam eligibility (maximum **{can_skip_rem}** skips allowed).")
+                st.info(f" **Term Recommendation:** Attend at least **{must_attend_rem}** out of the next **{remaining_in_term}** lectures to guarantee exam eligibility (maximum **{can_skip_rem}** skips allowed).")
 
-        st.markdown("#### 🔮 Interactive Streak Simulator")
+        st.markdown("####  Interactive Streak Simulator")
         col_sim1, col_sim2 = st.columns(2)
         with col_sim1:
             future_attend = st.slider("Classes you will attend consecutively:", min_value=0, max_value=25, value=3)
@@ -311,15 +312,15 @@ with tab_simulator:
                 st.metric("Projected Attendance %", f"{sim_new_pct:.1f}%", delta=f"{pct_diff:+.1f}%")
 
             if sim_new_pct >= 75.0:
-                st.success(f"🎉 Result: **Eligible!** You will be in the safe zone ({sim_new_pct:.1f}% ≥ 75%).")
+                st.success(f" Result: **Eligible!** You will be in the safe zone ({sim_new_pct:.1f}% ≥ 75%).")
             else:
-                st.error(f"🚨 Result: **Debarred Risk!** You will drop to {sim_new_pct:.1f}%, which is below the 75% threshold.")
+                st.error(f" Result: **Debarred Risk!** You will drop to {sim_new_pct:.1f}%, which is below the 75% threshold.")
     else:
         st.info("Log attendance records first to enable the simulator.")
 
 # --- TAB 4: ATTENDANCE HISTORY LOGS ---
 with tab_history:
-    st.subheader("📜 Detailed Attendance Records")
+    st.subheader(" Detailed Attendance Records")
     
     col_f1, col_f2 = st.columns(2)
     with col_f1:
@@ -355,7 +356,7 @@ with tab_history:
 
     # Allow deleting incorrect log entry
     if not hist_df.empty:
-        with st.expander("🛠️ Delete or Correct an Attendance Entry"):
+        with st.expander("️ Delete or Correct an Attendance Entry"):
             log_ids = hist_df["id"].tolist()
             del_id = st.selectbox("Select Log ID to remove:", log_ids)
             if st.button("Delete Selected Log Entry"):

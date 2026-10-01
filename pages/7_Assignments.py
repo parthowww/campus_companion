@@ -13,7 +13,6 @@ from database import get_connection, render_sidebar
 # Page Configuration
 st.set_page_config(
     page_title="Assignments Tracker - Campus Companion",
-    page_icon="📝",
     layout="wide"
 )
 
@@ -21,10 +20,10 @@ st.set_page_config(
 role = render_sidebar()
 conn = get_connection()
 
-st.title("📝 Assignment Deadlines & Submissions")
+st.title(" Assignment Deadlines & Submissions")
 st.caption("Centralized assignment manager with submission tracking, deadline urgency, and grading history.")
 
-current_date_str = "2026-09-24"
+current_date_str = datetime.now().strftime("%Y-%m-%d")
 today_dt = datetime.strptime(current_date_str, "%Y-%m-%d")
 
 # Fetch Assignments & Subjects
@@ -55,7 +54,9 @@ in_progress_tasks = len(assign_df[assign_df["status"] == "In Progress"])
 submitted_tasks = len(assign_df[assign_df["status"] == "Submitted"])
 graded_tasks = len(assign_df[assign_df["status"] == "Graded"])
 
-a1, a2, a3, a4, a5 = st.columns(5)
+a1, a2, a3 = st.columns(3)
+st.write('')
+a4, a5, _ = st.columns(3)
 with a1:
     st.metric("Total Courseworks", total_tasks)
 with a2:
@@ -70,9 +71,9 @@ with a5:
 st.divider()
 
 tab_tasks, tab_submit, tab_analytics, tab_new = st.tabs([
-    "📋 Assignment Board",
-    "📤 Update Status & Submit",
-    "📊 Performance Analytics",
+    " Assignment Board",
+    " Update Status & Submit",
+    " Performance Analytics",
     "➕ Add New Assignment"
 ])
 
@@ -100,45 +101,45 @@ with tab_tasks:
         filtered_tasks = filtered_tasks[filtered_tasks["subject_code"] == sub_filter]
 
     if filtered_tasks.empty:
-        st.info("🎉 No assignments found matching this filter.")
+        st.info(" No assignments found matching this filter.")
     else:
         for _, task in filtered_tasks.iterrows():
             with st.container(border=True):
                 c_details, c_urgency = st.columns([3, 1], gap="medium")
                 with c_details:
                     st.markdown(f"### {task['title']}")
-                    st.caption(f"📚 Course: **{task['subject_code']} - {task['subject_name']}** | Max Marks: **{task['max_marks']}**")
+                    st.caption(f" Course: **{task['subject_code']} - {task['subject_name']}** | Max Marks: **{task['max_marks']}**")
                     st.write(task['description'] or "No additional description.")
                     if task['submission_notes']:
-                        st.caption(f"📌 **Submission Notes:** {task['submission_notes']}")
+                        st.caption(f" **Submission Notes:** {task['submission_notes']}")
 
                 with c_urgency:
-                    st.markdown(f"🗓️ **Due: {task['due_date']}**")
+                    st.markdown(f"️ **Due: {task['due_date']}**")
                     
                     # Urgency indicator
                     if task['status'] in ['Pending', 'In Progress']:
                         if task['days_left'] < 0:
-                            st.error(f"🚨 Overdue by {abs(task['days_left'])} days!")
+                            st.error(f" Overdue by {abs(task['days_left'])} days!")
                         elif task['days_left'] <= 2:
                             st.warning(f"⚠️ Urgent: Due in {task['days_left']} days!")
                         else:
-                            st.info(f"⏳ {task['days_left']} days left")
+                            st.info(f" {task['days_left']} days left")
                     
                     # Status Badge
                     if task['status'] == "Pending":
-                        st.caption("Status: 🔴 **Pending**")
+                        st.caption("Status:  **Pending**")
                     elif task['status'] == "In Progress":
-                        st.caption("Status: 🟡 **In Progress**")
+                        st.caption("Status:  **In Progress**")
                     elif task['status'] == "Submitted":
-                        st.caption("Status: 🔵 **Submitted**")
+                        st.caption("Status:  **Submitted**")
                     else:
-                        st.caption("Status: 🟢 **Graded**")
+                        st.caption("Status:  **Graded**")
                         if task['marks_obtained'] is not None:
                             st.success(f"Score: **{task['marks_obtained']}** / {task['max_marks']}")
 
 # --- TAB 2: UPDATE STATUS & SUBMIT ---
 with tab_submit:
-    st.subheader("📤 Turn in Deliverable or Update Status")
+    st.subheader(" Turn in Deliverable or Update Status")
     st.write("Record your progress or submit assignment deliverables.")
 
     task_options = {
@@ -189,7 +190,7 @@ with tab_submit:
                 st.rerun()
 
         st.write("")
-        with st.expander("🗑️ Delete Selected Assignment"):
+        with st.expander("️ Delete Selected Assignment"):
             st.warning(f"Permanently remove '{target_task['title']}'?")
             if st.button("Confirm Delete Assignment", type="primary"):
                 cursor = conn.cursor()

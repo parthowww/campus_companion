@@ -12,7 +12,6 @@ from database import get_connection, render_sidebar
 # Page Configuration
 st.set_page_config(
     page_title="Clubs & Societies - Campus Companion",
-    page_icon="🚀",
     layout="wide"
 )
 
@@ -20,10 +19,10 @@ st.set_page_config(
 role = render_sidebar()
 conn = get_connection()
 
-st.title("🚀 Student Clubs & Societies")
+st.title(" Student Clubs & Societies")
 st.caption("Explore student-led communities, register for technical workshops, cultural jams, and leadership activities.")
 
-current_date_str = "2026-09-24"
+current_date_str = datetime.now().strftime("%Y-%m-%d")
 today_dt = datetime.strptime(current_date_str, "%Y-%m-%d")
 
 # Fetch Clubs and Club Events
@@ -42,7 +41,9 @@ club_events_df = pd.read_sql_query(club_events_query, conn)
 club_events_df["date_obj"] = pd.to_datetime(club_events_df["date"])
 
 # Top Metric Banner
-cl1, cl2, cl3, cl4 = st.columns(4)
+cl1, cl2 = st.columns(2)
+st.write('')
+cl3, cl4 = st.columns(2)
 with cl1:
     st.metric("Chartered Clubs", f"{len(clubs_df)} Societies")
 with cl2:
@@ -57,8 +58,8 @@ with cl4:
 st.divider()
 
 tab_events, tab_directory, tab_manage = st.tabs([
-    "📅 Club Events & Workshops",
-    "🏛️ Societies Directory",
+    " Club Events & Workshops",
+    "️ Societies Directory",
     "⚙️ Admin Club Manager"
 ])
 
@@ -96,13 +97,13 @@ with tab_events:
                 c_main, c_act = st.columns([3, 1], gap="medium")
                 with c_main:
                     st.markdown(f"### {cev['title']}")
-                    st.caption(f"🎪 Organized by **{cev['club_name']}** (`{cev['club_category']}`)")
-                    st.caption(f"🗓️ **{cev['date_obj'].strftime('%A, %d %B %Y')}** at **{cev['time']}** | 📍 Venue: **{cev['venue']}**")
+                    st.caption(f" Organized by **{cev['club_name']}** (`{cev['club_category']}`)")
+                    st.caption(f"️ **{cev['date_obj'].strftime('%A, %d %B %Y')}** at **{cev['time']}** |  Venue: **{cev['venue']}**")
                     st.write(cev["description"])
                 with c_act:
                     st.metric("Interested / RSVP", f"{cev['rsvp_count']} Students")
                     btn_key = f"rsvp_cev_{cev['id']}"
-                    if st.button("🙋 RSVP for Workshop", key=btn_key, use_container_width=True):
+                    if st.button(" RSVP for Workshop", key=btn_key, use_container_width=True):
                         cursor = conn.cursor()
                         cursor.execute("UPDATE club_events SET rsvp_count = rsvp_count + 1 WHERE id = ?;", (cev["id"],))
                         conn.commit()
@@ -128,20 +129,20 @@ with tab_directory:
                 st.markdown(f"### {cl['name']}")
                 if cl['motto']:
                     st.caption(f"*“{cl['motto']}”*")
-                st.markdown(f"Category: `{cl['category']}` | 👥 Members: **{cl['member_count']}**")
+                st.markdown(f"Category: `{cl['category']}` |  Members: **{cl['member_count']}**")
                 st.write(cl['description'])
-                st.write(f"👤 **Student Lead:** {cl['lead_name']} ([{cl['lead_email']}](mailto:{cl['lead_email']}))")
-                st.caption(f"📍 Regular Meets: **{cl['meeting_room']}**")
+                st.write(f" **Student Lead:** {cl['lead_name']} ([{cl['lead_email']}](mailto:{cl['lead_email']}))")
+                st.caption(f" Regular Meets: **{cl['meeting_room']}**")
                 
                 # Interactive Join Interest
                 join_key = f"join_club_{cl['id']}"
-                if st.button("🤝 Join Society", key=join_key):
+                if st.button(" Join Society", key=join_key):
                     st.toast(f"Application sent to {cl['lead_name']} ({cl['name']})!")
 
 # --- TAB 3: ADMIN CLUB MANAGER ---
 with tab_manage:
     if role == "Admin":
-        st.subheader("⚡ Master Club & Event Controls")
+        st.subheader(" Master Club & Event Controls")
         st.write("Publish new club workshops, schedule meetups, or charter new campus societies.")
 
         col_ev_admin, col_cl_admin = st.columns([1, 1], gap="large")
@@ -172,7 +173,7 @@ with tab_manage:
                         st.rerun()
 
         with col_cl_admin:
-            st.markdown("#### 🏛️ Charter New Student Club")
+            st.markdown("#### ️ Charter New Student Club")
             with st.form("charter_club_form", clear_on_submit=True):
                 new_c_name = st.text_input("Society / Club Name:", placeholder="e.g. Blockchain & Web3 Guild")
                 new_c_cat = st.selectbox("Category:", ["Technical", "Cultural", "Sports", "Social", "Management", "Arts"])
@@ -198,7 +199,7 @@ with tab_manage:
                         st.rerun()
 
             st.write("")
-            st.markdown("#### 🗑️ Delete Existing Club Event")
+            st.markdown("#### ️ Delete Existing Club Event")
             if not club_events_df.empty:
                 del_opts = {f"#{r['id']} {r['title']} ({r['club_name']})": r['id'] for _, r in club_events_df.iterrows()}
                 sel_del_ev = st.selectbox("Select Activity to Remove:", list(del_opts.keys()))
@@ -211,7 +212,7 @@ with tab_manage:
                     st.warning("Club activity deleted!")
                     st.rerun()
     else:
-        st.info("🔒 **Admin Access Required**")
+        st.info(" **Admin Access Required**")
         st.write("Switch user role to **Admin** in the sidebar to publish club workshops or charter societies.")
 
 conn.close()
