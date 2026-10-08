@@ -560,21 +560,60 @@ def get_subject_color(subject_name: str) -> str:
 def render_sidebar():
     """Renders the common sidebar role toggle and quick info across all pages."""
     import streamlit as st
+    
+    print("DEBUG: logged_in is", st.session_state.get("is_auth_user", None))
+    if "is_auth_user" not in st.session_state:
+        st.session_state["is_auth_user"] = False
+        
+    if not st.session_state["is_auth_user"]:
+        # Hide sidebar navigation so user can't navigate to other pages while logged out
+        st.markdown(
+            """
+            <style>
+                [data-testid="collapsedControl"] { display: none; }
+                [data-testid="stSidebar"] { display: none; }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        
+        st.title("🎓 Campus Companion Portal")
+        st.subheader("Login to your account")
+        st.write("---")
+        
+        col1, col2 = st.columns(2, gap="large")
+        
+        with col1:
+            with st.container(border=True):
+                st.markdown("### 👨‍🎓 Student Login")
+                st.caption("Access attendance, grades, and schedule.")
+                st.text_input("Student Username", placeholder="e.g. 2024-CS-042", key="login_student_user")
+                st.text_input("Password", type="password", key="login_student_pass")
+                if st.button("Login as Student", use_container_width=True, type="primary"):
+                    st.session_state["is_auth_user"] = True
+                    st.session_state["user_role"] = "Student"
+                    st.rerun()
+
+        with col2:
+            with st.container(border=True):
+                st.markdown("### 🛡️ Admin Login")
+                st.caption("Manage circulars, schedule classes, add holidays.")
+                st.text_input("Admin Username", placeholder="e.g. admin@college.edu", key="login_admin_user")
+                st.text_input("Password", type="password", key="login_admin_pass")
+                if st.button("Login as Admin", use_container_width=True, type="primary"):
+                    st.session_state["is_auth_user"] = True
+                    st.session_state["user_role"] = "Admin"
+                    st.rerun()
+                    
+        st.stop()
+
     if "user_role" not in st.session_state:
         st.session_state["user_role"] = "Student"
+        
+    role = st.session_state["user_role"]
     
     st.sidebar.subheader(" Campus Companion")
     st.sidebar.caption("Integrated Student Portal & ERP")
-    
-    current_idx = 0 if st.session_state["user_role"] == "Student" else 1
-    role = st.sidebar.selectbox(
-        "Switch User Role:",
-        ["Student", "Admin"],
-        index=current_idx,
-        key="app_user_role_dropdown",
-        help="Admin unlocks add/edit/delete forms across events, clubs, notices, and schedules."
-    )
-    st.session_state["user_role"] = role
     
     if role == "Admin":
         st.sidebar.warning(" **Admin Mode Active**\n\nFull administrative permissions granted to post circulars, schedule classes, add holidays, and organize events.")
@@ -582,8 +621,18 @@ def render_sidebar():
         st.sidebar.info(" **Student Mode Active**\n\nAccess personal attendance logging, grade forecasting, assignment submissions, and class schedules.")
     
     st.sidebar.divider()
-    st.sidebar.caption("Current Semester: **3rd Sem (Odd 2026)**")
-    st.sidebar.caption("Roll No: **2024-CS-042**")
+    
+    # Logout button
+    if st.sidebar.button("Logout", use_container_width=True):
+        st.session_state["is_auth_user"] = False
+        st.session_state["user_role"] = None
+        st.rerun()
+        
     st.sidebar.divider()
+    if role == "Student":
+        st.sidebar.caption("Current Semester: **3rd Sem (Odd 2026)**")
+        st.sidebar.caption("Roll No: **2024-CS-042**")
+        st.sidebar.divider()
+    
     return role
 

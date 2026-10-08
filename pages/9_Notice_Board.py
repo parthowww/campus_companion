@@ -51,7 +51,10 @@ with n4:
 
 st.divider()
 
-tab_bulletin, tab_admin = st.tabs([" Notice Bulletin", "⚙️ Admin Notice Publisher"])
+if role == 'Admin':
+    tab_bulletin, tab_admin = st.tabs([" Notice Bulletin", "⚙️ Admin Notice Publisher"])
+else:
+    tab_bulletin = st.tabs([" Notice Bulletin"])[0]
 
 # --- TAB 1: NOTICE BULLETIN ---
 with tab_bulletin:
@@ -113,53 +116,54 @@ with tab_bulletin:
                         st.caption("️ General Admin")
 
 # --- TAB 2: ADMIN NOTICE PUBLISHER ---
-with tab_admin:
-    if role == "Admin":
-        st.subheader(" Master Notice Board Operations")
-        st.write("Publish official notifications or retract outdated circulars.")
+if role == 'Admin':
+    with tab_admin:
+        if role == "Admin":
+            st.subheader(" Master Notice Board Operations")
+            st.write("Publish official notifications or retract outdated circulars.")
 
-        col_post, col_remove = st.columns([1, 1], gap="large")
+            col_post, col_remove = st.columns([1, 1], gap="large")
 
-        with col_post:
-            st.markdown("#### ➕ Publish New Circular")
-            with st.form("publish_notice_form", clear_on_submit=True):
-                new_n_title = st.text_input("Notice Title / Heading:", placeholder="e.g. Schedule for Odd Semester Practical Viva")
-                new_n_cat = st.selectbox("Category:", ["Urgent", "Academic", "Exam", "Placement", "Hostel", "General"])
-                new_n_target = st.text_input("Target Audience:", value="All Students")
-                new_n_content = st.text_area("Official Circular Content:", height=150)
-                new_n_pin = st.checkbox(" Pin to Top of Notice Board", value=False)
+            with col_post:
+                st.markdown("#### ➕ Publish New Circular")
+                with st.form("publish_notice_form", clear_on_submit=True):
+                    new_n_title = st.text_input("Notice Title / Heading:", placeholder="e.g. Schedule for Odd Semester Practical Viva")
+                    new_n_cat = st.selectbox("Category:", ["Urgent", "Academic", "Exam", "Placement", "Hostel", "General"])
+                    new_n_target = st.text_input("Target Audience:", value="All Students")
+                    new_n_content = st.text_area("Official Circular Content:", height=150)
+                    new_n_pin = st.checkbox(" Pin to Top of Notice Board", value=False)
 
-                publish_btn = st.form_submit_button("Broadcast Notice")
-                if publish_btn:
-                    if not new_n_title or not new_n_content:
-                        st.error("Title and content are required.")
-                    else:
+                    publish_btn = st.form_submit_button("Broadcast Notice")
+                    if publish_btn:
+                        if not new_n_title or not new_n_content:
+                            st.error("Title and content are required.")
+                        else:
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                            INSERT INTO notices (title, category, content, published_date, is_pinned, target_audience)
+                            VALUES (?, ?, ?, ?, ?, ?);
+                            """, (new_n_title, new_n_cat, new_n_content, current_date_str, 1 if new_n_pin else 0, new_n_target))
+                            conn.commit()
+                            st.success(f"Circular '{new_n_title}' posted successfully!")
+                            st.rerun()
+
+            with col_remove:
+                st.markdown("#### ️ Delete or Retract Circular")
+                if not notices_df.empty:
+                    del_notice_map = {f"#{r['id']} - {r['title']} ({r['published_date']})": r['id'] for _, r in notices_df.iterrows()}
+                    sel_del_notice = st.selectbox("Select Circular to Delete:", list(del_notice_map.keys()))
+                    del_target_nid = del_notice_map[sel_del_notice]
+
+                    if st.button("Delete Notice", type="primary"):
                         cursor = conn.cursor()
-                        cursor.execute("""
-                        INSERT INTO notices (title, category, content, published_date, is_pinned, target_audience)
-                        VALUES (?, ?, ?, ?, ?, ?);
-                        """, (new_n_title, new_n_cat, new_n_content, current_date_str, 1 if new_n_pin else 0, new_n_target))
+                        cursor.execute("DELETE FROM notices WHERE id = ?;", (del_target_nid,))
                         conn.commit()
-                        st.success(f"Circular '{new_n_title}' posted successfully!")
+                        st.warning("Notice retracted from board!")
                         st.rerun()
-
-        with col_remove:
-            st.markdown("#### ️ Delete or Retract Circular")
-            if not notices_df.empty:
-                del_notice_map = {f"#{r['id']} - {r['title']} ({r['published_date']})": r['id'] for _, r in notices_df.iterrows()}
-                sel_del_notice = st.selectbox("Select Circular to Delete:", list(del_notice_map.keys()))
-                del_target_nid = del_notice_map[sel_del_notice]
-
-                if st.button("Delete Notice", type="primary"):
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM notices WHERE id = ?;", (del_target_nid,))
-                    conn.commit()
-                    st.warning("Notice retracted from board!")
-                    st.rerun()
-            else:
-                st.info("No notices to delete.")
-    else:
-        st.info(" **Admin Access Required**")
-        st.write("Switch user role to **Admin** in the sidebar to publish or remove official notices.")
+                else:
+                    st.info("No notices to delete.")
+        else:
+            st.info(" **Admin Access Required**")
+            st.write("Switch user role to **Admin** in the sidebar to publish or remove official notices.")
 
 conn.close()

@@ -86,7 +86,10 @@ if selected_month != "All Months":
 if selected_cat != "All Categories":
     filtered_holidays = filtered_holidays[filtered_holidays["category"] == selected_cat]
 
-tab_list, tab_visual, tab_admin = st.tabs([" Holiday Calendar Cards", " Timeline & Distribution", "⚙️ Admin Holiday Manager"])
+if role == 'Admin':
+    tab_list, tab_visual, tab_admin = st.tabs([" Holiday Calendar Cards", " Timeline & Distribution", "⚙️ Admin Holiday Manager"])
+else:
+    tab_list, tab_visual = st.tabs([" Holiday Calendar Cards", " Timeline & Distribution"])
 
 # --- TAB 1: HOLIDAY CARDS ---
 with tab_list:
@@ -140,52 +143,53 @@ with tab_visual:
         st.plotly_chart(fig_hol, use_container_width=True)
 
 # --- TAB 3: ADMIN HOLIDAY MANAGER ---
-with tab_admin:
-    if role == "Admin":
-        st.subheader(" Manage Academic Holiday List")
-        st.write("Add new institute off-days or remove cancelled holidays.")
+if role == 'Admin':
+    with tab_admin:
+        if role == "Admin":
+            st.subheader(" Manage Academic Holiday List")
+            st.write("Add new institute off-days or remove cancelled holidays.")
 
-        col_add, col_del = st.columns([1, 1], gap="large")
+            col_add, col_del = st.columns([1, 1], gap="large")
 
-        with col_add:
-            st.markdown("#### ➕ Add New Holiday")
-            with st.form("add_holiday_form", clear_on_submit=True):
-                h_name = st.text_input("Holiday Name:", placeholder="e.g. Sports Day Holiday")
-                h_date = st.date_input("Holiday Date:", value=today_dt.date())
-                h_cat = st.selectbox("Category:", ["College-Specific", "National"])
-                h_desc = st.text_area("Description / Remarks:", placeholder="e.g. College closed on account of annual celebrations.")
-                
-                submitted = st.form_submit_button("Publish Holiday to Calendar")
-                if submitted:
-                    if not h_name:
-                        st.error("Please provide a holiday name.")
-                    else:
+            with col_add:
+                st.markdown("#### ➕ Add New Holiday")
+                with st.form("add_holiday_form", clear_on_submit=True):
+                    h_name = st.text_input("Holiday Name:", placeholder="e.g. Sports Day Holiday")
+                    h_date = st.date_input("Holiday Date:", value=today_dt.date())
+                    h_cat = st.selectbox("Category:", ["College-Specific", "National"])
+                    h_desc = st.text_area("Description / Remarks:", placeholder="e.g. College closed on account of annual celebrations.")
+                    
+                    submitted = st.form_submit_button("Publish Holiday to Calendar")
+                    if submitted:
+                        if not h_name:
+                            st.error("Please provide a holiday name.")
+                        else:
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                            INSERT INTO holidays (name, date, category, description)
+                            VALUES (?, ?, ?, ?);
+                            """, (h_name, h_date.strftime("%Y-%m-%d"), h_cat, h_desc))
+                            conn.commit()
+                            st.success(f"Holiday '{h_name}' added successfully!")
+                            st.rerun()
+
+            with col_del:
+                st.markdown("#### ️ Delete Existing Holiday")
+                if not holidays_df.empty:
+                    hol_options = {f"{h['name']} ({h['date']})": h['id'] for _, h in holidays_df.iterrows()}
+                    selected_hol_label = st.selectbox("Select Holiday to Delete:", list(hol_options.keys()))
+                    del_target_id = hol_options[selected_hol_label]
+
+                    if st.button("Delete Selected Holiday", type="primary"):
                         cursor = conn.cursor()
-                        cursor.execute("""
-                        INSERT INTO holidays (name, date, category, description)
-                        VALUES (?, ?, ?, ?);
-                        """, (h_name, h_date.strftime("%Y-%m-%d"), h_cat, h_desc))
+                        cursor.execute("DELETE FROM holidays WHERE id = ?;", (del_target_id,))
                         conn.commit()
-                        st.success(f"Holiday '{h_name}' added successfully!")
+                        st.warning("Holiday removed from academic calendar!")
                         st.rerun()
-
-        with col_del:
-            st.markdown("#### ️ Delete Existing Holiday")
-            if not holidays_df.empty:
-                hol_options = {f"{h['name']} ({h['date']})": h['id'] for _, h in holidays_df.iterrows()}
-                selected_hol_label = st.selectbox("Select Holiday to Delete:", list(hol_options.keys()))
-                del_target_id = hol_options[selected_hol_label]
-
-                if st.button("Delete Selected Holiday", type="primary"):
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM holidays WHERE id = ?;", (del_target_id,))
-                    conn.commit()
-                    st.warning("Holiday removed from academic calendar!")
-                    st.rerun()
-            else:
-                st.info("No holidays available to delete.")
-    else:
-        st.info(" **Admin Access Required**")
-        st.write("Switch role to **Admin** in the sidebar to publish or remove holidays.")
+                else:
+                    st.info("No holidays available to delete.")
+        else:
+            st.info(" **Admin Access Required**")
+            st.write("Switch role to **Admin** in the sidebar to publish or remove holidays.")
 
 conn.close()

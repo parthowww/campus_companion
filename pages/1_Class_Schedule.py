@@ -49,7 +49,10 @@ subjects_df = pd.read_sql_query("SELECT id, code, name FROM subjects ORDER BY co
 faculty_df = pd.read_sql_query("SELECT id, name, department FROM faculty ORDER BY name;", conn)
 rooms_df = pd.read_sql_query("SELECT room_number, block_name FROM buildings_rooms ORDER BY room_number;", conn)
 
-tab_grid, tab_table, tab_manage = st.tabs([" Weekly Schedule Grid", " Detailed Schedule List", "⚙️ Manage Classes"])
+if role == 'Admin':
+    tab_grid, tab_table, tab_manage = st.tabs([" Weekly Schedule Grid", " Detailed Schedule List", "⚙️ Manage Classes"])
+else:
+    tab_grid, tab_table = st.tabs([" Weekly Schedule Grid", " Detailed Schedule List"])
 
 # --- TAB 1: WEEKLY SCHEDULE GRID ---
 with tab_grid:
@@ -169,95 +172,96 @@ with tab_table:
     )
 
 # --- TAB 3: MANAGE CLASSES (ADMIN ONLY) ---
-with tab_manage:
-    if role == "Admin":
-        st.subheader(" Master Schedule Management")
-        st.write("Add, update, or remove period allocations from the institutional schedule.")
+if role == 'Admin':
+    with tab_manage:
+        if role == "Admin":
+            st.subheader(" Master Schedule Management")
+            st.write("Add, update, or remove period allocations from the institutional schedule.")
 
-        m_col1, m_col2 = st.columns([1, 1], gap="large")
+            m_col1, m_col2 = st.columns([1, 1], gap="large")
 
-        with m_col1:
-            st.markdown("#### ➕ Add New Scheduled Class")
-            with st.form("add_class_form", clear_on_submit=True):
-                subject_options = {f"{r['code']} - {r['name']}": r['id'] for _, r in subjects_df.iterrows()}
-                selected_sub_name = st.selectbox("Select Subject:", options=list(subject_options.keys()))
-                
-                day_choice = st.selectbox("Day of Week:", days)
-                
-                c_t1, c_t2 = st.columns(2)
-                with c_t1:
-                    start_val = st.text_input("Start Time (e.g. 09:00 AM):", value="09:00 AM")
-                with c_t2:
-                    end_val = st.text_input("End Time (e.g. 10:00 AM):", value="10:00 AM")
-
-                room_list = [r["room_number"] for _, r in rooms_df.iterrows()]
-                room_choice = st.selectbox("Room / Hall:", room_list)
-
-                faculty_options = {f"{f['name']} ({f['department']})": f['id'] for _, f in faculty_df.iterrows()}
-                faculty_choice = st.selectbox("Faculty Instructor:", list(faculty_options.keys()))
-
-                session_type_choice = st.selectbox("Session Type:", ["Lecture", "Lab", "Tutorial"])
-
-                submitted = st.form_submit_button("Save Class to Timetable")
-                if submitted:
-                    sub_id = subject_options[selected_sub_name]
-                    fac_id = faculty_options[faculty_choice]
+            with m_col1:
+                st.markdown("#### ➕ Add New Scheduled Class")
+                with st.form("add_class_form", clear_on_submit=True):
+                    subject_options = {f"{r['code']} - {r['name']}": r['id'] for _, r in subjects_df.iterrows()}
+                    selected_sub_name = st.selectbox("Select Subject:", options=list(subject_options.keys()))
                     
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                    INSERT INTO class_schedule (subject_id, day_of_week, start_time, end_time, room, faculty_id, session_type)
-                    VALUES (?, ?, ?, ?, ?, ?, ?);
-                    """, (sub_id, day_choice, start_val, end_val, room_choice, fac_id, session_type_choice))
-                    conn.commit()
-                    st.success(" Class added to timetable successfully! Reloading view...")
-                    st.rerun()
+                    day_choice = st.selectbox("Day of Week:", days)
+                    
+                    c_t1, c_t2 = st.columns(2)
+                    with c_t1:
+                        start_val = st.text_input("Start Time (e.g. 09:00 AM):", value="09:00 AM")
+                    with c_t2:
+                        end_val = st.text_input("End Time (e.g. 10:00 AM):", value="10:00 AM")
 
-        with m_col2:
-            st.markdown("#### ️ Edit or Delete Existing Class")
-            if not sched_df.empty:
-                class_dict = {
-                    f"#{row['id']} [{row['day_of_week'][:3]}] {row['subject_code']} ({row['start_time']} - {row['room']})": row['id']
-                    for _, row in sched_df.iterrows()
-                }
-                selected_class_label = st.selectbox("Select Class to Manage:", list(class_dict.keys()))
-                target_id = class_dict[selected_class_label]
+                    room_list = [r["room_number"] for _, r in rooms_df.iterrows()]
+                    room_choice = st.selectbox("Room / Hall:", room_list)
 
-                class_to_edit = sched_df[sched_df["id"] == target_id].iloc[0]
+                    faculty_options = {f"{f['name']} ({f['department']})": f['id'] for _, f in faculty_df.iterrows()}
+                    faculty_choice = st.selectbox("Faculty Instructor:", list(faculty_options.keys()))
 
-                with st.form("edit_class_form"):
-                    st.caption(f"Editing Class Record #{target_id}")
-                    e_room = st.text_input("Update Room / Venue:", value=class_to_edit["room"])
-                    e_start = st.text_input("Update Start Time:", value=class_to_edit["start_time"])
-                    e_end = st.text_input("Update End Time:", value=class_to_edit["end_time"])
-                    e_type = st.selectbox("Update Session Type:", ["Lecture", "Lab", "Tutorial"], index=["Lecture", "Lab", "Tutorial"].index(class_to_edit["session_type"]))
+                    session_type_choice = st.selectbox("Session Type:", ["Lecture", "Lab", "Tutorial"])
 
-                    col_save, col_del = st.columns(2)
-                    with col_save:
-                        update_pressed = st.form_submit_button("Update Class Details")
-                    with col_del:
-                        delete_pressed = st.form_submit_button("Delete Class Entry")
-
-                    if update_pressed:
+                    submitted = st.form_submit_button("Save Class to Timetable")
+                    if submitted:
+                        sub_id = subject_options[selected_sub_name]
+                        fac_id = faculty_options[faculty_choice]
+                        
                         cursor = conn.cursor()
                         cursor.execute("""
-                        UPDATE class_schedule
-                        SET room = ?, start_time = ?, end_time = ?, session_type = ?
-                        WHERE id = ?;
-                        """, (e_room, e_start, e_end, e_type, target_id))
+                        INSERT INTO class_schedule (subject_id, day_of_week, start_time, end_time, room, faculty_id, session_type)
+                        VALUES (?, ?, ?, ?, ?, ?, ?);
+                        """, (sub_id, day_choice, start_val, end_val, room_choice, fac_id, session_type_choice))
                         conn.commit()
-                        st.success("Class updated successfully!")
+                        st.success(" Class added to timetable successfully! Reloading view...")
                         st.rerun()
 
-                    if delete_pressed:
-                        cursor = conn.cursor()
-                        cursor.execute("DELETE FROM class_schedule WHERE id = ?;", (target_id,))
-                        conn.commit()
-                        st.warning("Class deleted from timetable!")
-                        st.rerun()
-            else:
-                st.info("No classes found to edit.")
-    else:
-        st.info(" **Admin Access Required**")
-        st.write("You are currently viewing in **Student Role**. Switching to Admin in the sidebar unlocks the class scheduling and deletion forms.")
+            with m_col2:
+                st.markdown("#### ️ Edit or Delete Existing Class")
+                if not sched_df.empty:
+                    class_dict = {
+                        f"#{row['id']} [{row['day_of_week'][:3]}] {row['subject_code']} ({row['start_time']} - {row['room']})": row['id']
+                        for _, row in sched_df.iterrows()
+                    }
+                    selected_class_label = st.selectbox("Select Class to Manage:", list(class_dict.keys()))
+                    target_id = class_dict[selected_class_label]
+
+                    class_to_edit = sched_df[sched_df["id"] == target_id].iloc[0]
+
+                    with st.form("edit_class_form"):
+                        st.caption(f"Editing Class Record #{target_id}")
+                        e_room = st.text_input("Update Room / Venue:", value=class_to_edit["room"])
+                        e_start = st.text_input("Update Start Time:", value=class_to_edit["start_time"])
+                        e_end = st.text_input("Update End Time:", value=class_to_edit["end_time"])
+                        e_type = st.selectbox("Update Session Type:", ["Lecture", "Lab", "Tutorial"], index=["Lecture", "Lab", "Tutorial"].index(class_to_edit["session_type"]))
+
+                        col_save, col_del = st.columns(2)
+                        with col_save:
+                            update_pressed = st.form_submit_button("Update Class Details")
+                        with col_del:
+                            delete_pressed = st.form_submit_button("Delete Class Entry")
+
+                        if update_pressed:
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                            UPDATE class_schedule
+                            SET room = ?, start_time = ?, end_time = ?, session_type = ?
+                            WHERE id = ?;
+                            """, (e_room, e_start, e_end, e_type, target_id))
+                            conn.commit()
+                            st.success("Class updated successfully!")
+                            st.rerun()
+
+                        if delete_pressed:
+                            cursor = conn.cursor()
+                            cursor.execute("DELETE FROM class_schedule WHERE id = ?;", (target_id,))
+                            conn.commit()
+                            st.warning("Class deleted from timetable!")
+                            st.rerun()
+                else:
+                    st.info("No classes found to edit.")
+        else:
+            st.info(" **Admin Access Required**")
+            st.write("You are currently viewing in **Student Role**. Switching to Admin in the sidebar unlocks the class scheduling and deletion forms.")
 
 conn.close()

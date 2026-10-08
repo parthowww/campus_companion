@@ -82,10 +82,11 @@ campus_companion/
 
 ## 🔐 Role System
 
-The app supports two roles switchable via the sidebar:
+The app now features a strict Role-Based Access Control (RBAC) portal:
 
-- **Student** — Read-only view of all data
-- **Admin** — Full CRUD access to manage schedules, events, notices, faculty records, and more
+- **Login Wall**: A secure landing page blocks access to the main app until authenticated.
+- **Student Portal**: Tailored view of data. Students can log their own attendance, view schedules, and mark assignments as submitted.
+- **Admin Portal**: Full CRUD access to manage schedules, events, notices, faculty records, and grade assignments.
 
 ---
 

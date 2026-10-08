@@ -87,11 +87,10 @@ with c4:
 
 st.divider()
 
-tab_overview, tab_planner, tab_manager = st.tabs([
-    " Academic Progression & Breakdown",
-    " Target CGPA Forecaster",
-    "⚙️ Manage Course Grades"
-])
+if role == 'Admin':
+    tab_overview, tab_planner, tab_manager = st.tabs([" Academic Progression & Breakdown", " Target CGPA Forecaster", "⚙️ Manage Course Grades"])
+else:
+    tab_overview, tab_planner = st.tabs([" Academic Progression & Breakdown", " Target CGPA Forecaster"])
 
 # --- TAB 1: ACADEMIC PROGRESSION & BREAKDOWN ---
 with tab_overview:
@@ -199,56 +198,57 @@ with tab_planner:
                 st.error(f" **Mathematically Impossible!** Scoring {required_future_sgpa:.2f} exceeds the maximum possible 10.0 limit. Consider adjusting your target CGPA to a realistic figure like {min(10.0, (total_grade_points + 10.0 * future_credits) / total_graduation_credits):.2f}.")
 
 # --- TAB 3: MANAGE COURSE GRADES ---
-with tab_manager:
-    st.subheader("⚙️ Add or Update Course Grade Entries")
-    st.caption("Data is persisted in campus.db SQLite database across app restarts.")
+if role == 'Admin':
+    with tab_manager:
+        st.subheader("⚙️ Add or Update Course Grade Entries")
+        st.caption("Data is persisted in campus.db SQLite database across app restarts.")
 
-    col_m1, col_m2 = st.columns([1, 1], gap="large")
+        col_m1, col_m2 = st.columns([1, 1], gap="large")
 
-    with col_m1:
-        st.markdown("#### ➕ Add Completed Course Grade")
-        with st.form("add_grade_form", clear_on_submit=True):
-            in_sem = st.number_input("Semester:", min_value=1, max_value=8, value=5)
-            in_code = st.text_input("Course Code:", placeholder="e.g. CS309")
-            in_name = st.text_input("Course Title:", placeholder="e.g. Compiler Design")
-            in_credits = st.number_input("Course Credits:", min_value=1, max_value=10, value=4)
-            
-            grade_choice = st.selectbox("Grade Secured:", list(GRADE_POINTS.keys()))
-            
-            submit_grade = st.form_submit_button("Record Grade to Transcript")
-            if submit_grade:
-                if not in_code or not in_name:
-                    st.error("Course code and title are required.")
-                else:
-                    g_letter = grade_choice.split(" ")[0]
-                    g_pts = GRADE_POINTS[grade_choice]
-                    
+        with col_m1:
+            st.markdown("#### ➕ Add Completed Course Grade")
+            with st.form("add_grade_form", clear_on_submit=True):
+                in_sem = st.number_input("Semester:", min_value=1, max_value=8, value=5)
+                in_code = st.text_input("Course Code:", placeholder="e.g. CS309")
+                in_name = st.text_input("Course Title:", placeholder="e.g. Compiler Design")
+                in_credits = st.number_input("Course Credits:", min_value=1, max_value=10, value=4)
+                
+                grade_choice = st.selectbox("Grade Secured:", list(GRADE_POINTS.keys()))
+                
+                submit_grade = st.form_submit_button("Record Grade to Transcript")
+                if submit_grade:
+                    if not in_code or not in_name:
+                        st.error("Course code and title are required.")
+                    else:
+                        g_letter = grade_choice.split(" ")[0]
+                        g_pts = GRADE_POINTS[grade_choice]
+                        
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                        INSERT INTO student_grades (semester, course_code, course_name, credits, grade_letter, grade_points)
+                        VALUES (?, ?, ?, ?, ?, ?);
+                        """, (in_sem, in_code, in_name, in_credits, g_letter, g_pts))
+                        conn.commit()
+                        st.success(f"Course {in_code} added with grade {g_letter} ({g_pts} pts)!")
+                        st.rerun()
+
+        with col_m2:
+            st.markdown("#### ️ Delete Course Grade Entry")
+            if not grades_df.empty:
+                grade_dict = {
+                    f"#{r['id']} [Sem {r['semester']}] {r['course_code']} - {r['course_name']} ({r['grade_letter']})": r['id']
+                    for _, r in grades_df.iterrows()
+                }
+                del_grade_choice = st.selectbox("Select Course Record to Remove:", list(grade_dict.keys()))
+                target_del_id = grade_dict[del_grade_choice]
+
+                if st.button("Delete Course Record", type="primary"):
                     cursor = conn.cursor()
-                    cursor.execute("""
-                    INSERT INTO student_grades (semester, course_code, course_name, credits, grade_letter, grade_points)
-                    VALUES (?, ?, ?, ?, ?, ?);
-                    """, (in_sem, in_code, in_name, in_credits, g_letter, g_pts))
+                    cursor.execute("DELETE FROM student_grades WHERE id = ?;", (target_del_id,))
                     conn.commit()
-                    st.success(f"Course {in_code} added with grade {g_letter} ({g_pts} pts)!")
+                    st.warning("Course grade record removed from database!")
                     st.rerun()
-
-    with col_m2:
-        st.markdown("#### ️ Delete Course Grade Entry")
-        if not grades_df.empty:
-            grade_dict = {
-                f"#{r['id']} [Sem {r['semester']}] {r['course_code']} - {r['course_name']} ({r['grade_letter']})": r['id']
-                for _, r in grades_df.iterrows()
-            }
-            del_grade_choice = st.selectbox("Select Course Record to Remove:", list(grade_dict.keys()))
-            target_del_id = grade_dict[del_grade_choice]
-
-            if st.button("Delete Course Record", type="primary"):
-                cursor = conn.cursor()
-                cursor.execute("DELETE FROM student_grades WHERE id = ?;", (target_del_id,))
-                conn.commit()
-                st.warning("Course grade record removed from database!")
-                st.rerun()
-        else:
-            st.info("No courses to delete.")
+            else:
+                st.info("No courses to delete.")
 
 conn.close()

@@ -54,7 +54,10 @@ with e4:
 st.divider()
 
 # Tab Navigation
-tab_browse, tab_timeline, tab_admin = st.tabs([" Explore Events", " Event Calendar Visual", "⚙️ Admin Event Management"])
+if role == 'Admin':
+    tab_browse, tab_timeline, tab_admin = st.tabs([" Explore Events", " Event Calendar Visual", "⚙️ Admin Event Management"])
+else:
+    tab_browse, tab_timeline = st.tabs([" Explore Events", " Event Calendar Visual"])
 
 # --- TAB 1: EXPLORE EVENTS ---
 with tab_browse:
@@ -132,78 +135,79 @@ with tab_timeline:
         st.plotly_chart(fig_events, use_container_width=True)
 
 # --- TAB 3: ADMIN EVENT MANAGEMENT ---
-with tab_admin:
-    if role == "Admin":
-        st.subheader(" Master Event Operations")
-        st.write("Publish new university events, modify event venues, or remove cancelled entries.")
+if role == 'Admin':
+    with tab_admin:
+        if role == "Admin":
+            st.subheader(" Master Event Operations")
+            st.write("Publish new university events, modify event venues, or remove cancelled entries.")
 
-        col_new, col_mod = st.columns([1, 1], gap="large")
+            col_new, col_mod = st.columns([1, 1], gap="large")
 
-        with col_new:
-            st.markdown("#### ➕ Add New Event")
-            with st.form("create_event_form", clear_on_submit=True):
-                e_title = st.text_input("Event Title:", placeholder="e.g. AI Research Conclave")
-                e_cat = st.selectbox("Category:", ["Technical", "Cultural", "Academic", "Sports", "Workshop"])
-                e_date = st.date_input("Event Date:", value=today_dt.date())
-                e_time = st.text_input("Time:", value="10:00 AM")
-                e_venue = st.text_input("Venue:", value="Block-E Auditorium")
-                e_org = st.text_input("Organizer:", value="Department of Computer Science")
-                e_desc = st.text_area("Detailed Description:", placeholder="Key highlights, speakers, guidelines.")
-                e_link = st.text_input("Registration URL (optional):", placeholder="https://example.com/register")
+            with col_new:
+                st.markdown("#### ➕ Add New Event")
+                with st.form("create_event_form", clear_on_submit=True):
+                    e_title = st.text_input("Event Title:", placeholder="e.g. AI Research Conclave")
+                    e_cat = st.selectbox("Category:", ["Technical", "Cultural", "Academic", "Sports", "Workshop"])
+                    e_date = st.date_input("Event Date:", value=today_dt.date())
+                    e_time = st.text_input("Time:", value="10:00 AM")
+                    e_venue = st.text_input("Venue:", value="Block-E Auditorium")
+                    e_org = st.text_input("Organizer:", value="Department of Computer Science")
+                    e_desc = st.text_area("Detailed Description:", placeholder="Key highlights, speakers, guidelines.")
+                    e_link = st.text_input("Registration URL (optional):", placeholder="https://example.com/register")
 
-                publish_pressed = st.form_submit_button("Publish Event")
-                if publish_pressed:
-                    if not e_title:
-                        st.error("Please enter an event title.")
-                    else:
-                        cursor = conn.cursor()
-                        cursor.execute("""
-                        INSERT INTO events (title, category, date, time, venue, organizer, description, registration_url, status, rsvp_count)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Upcoming', 0);
-                        """, (e_title, e_cat, e_date.strftime("%Y-%m-%d"), e_time, e_venue, e_org, e_desc, e_link))
-                        conn.commit()
-                        st.success(f"Event '{e_title}' published successfully!")
-                        st.rerun()
+                    publish_pressed = st.form_submit_button("Publish Event")
+                    if publish_pressed:
+                        if not e_title:
+                            st.error("Please enter an event title.")
+                        else:
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                            INSERT INTO events (title, category, date, time, venue, organizer, description, registration_url, status, rsvp_count)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Upcoming', 0);
+                            """, (e_title, e_cat, e_date.strftime("%Y-%m-%d"), e_time, e_venue, e_org, e_desc, e_link))
+                            conn.commit()
+                            st.success(f"Event '{e_title}' published successfully!")
+                            st.rerun()
 
-        with col_mod:
-            st.markdown("#### ️ Edit or Delete Event")
-            if not events_df.empty:
-                event_dict = {f"#{r['id']} - {r['title']} ({r['date']})": r['id'] for _, r in events_df.iterrows()}
-                selected_event_label = st.selectbox("Select Event to Manage:", list(event_dict.keys()))
-                del_ev_id = event_dict[selected_event_label]
-                ev_to_edit = events_df[events_df["id"] == del_ev_id].iloc[0]
+            with col_mod:
+                st.markdown("#### ️ Edit or Delete Event")
+                if not events_df.empty:
+                    event_dict = {f"#{r['id']} - {r['title']} ({r['date']})": r['id'] for _, r in events_df.iterrows()}
+                    selected_event_label = st.selectbox("Select Event to Manage:", list(event_dict.keys()))
+                    del_ev_id = event_dict[selected_event_label]
+                    ev_to_edit = events_df[events_df["id"] == del_ev_id].iloc[0]
 
-                with st.form("edit_event_form"):
-                    st.caption(f"Editing Event #{del_ev_id}")
-                    new_venue = st.text_input("Update Venue:", value=ev_to_edit["venue"])
-                    new_time = st.text_input("Update Time:", value=ev_to_edit["time"])
-                    new_desc = st.text_area("Update Description:", value=ev_to_edit["description"])
+                    with st.form("edit_event_form"):
+                        st.caption(f"Editing Event #{del_ev_id}")
+                        new_venue = st.text_input("Update Venue:", value=ev_to_edit["venue"])
+                        new_time = st.text_input("Update Time:", value=ev_to_edit["time"])
+                        new_desc = st.text_area("Update Description:", value=ev_to_edit["description"])
 
-                    b_save, b_del = st.columns(2)
-                    with b_save:
-                        update_ev = st.form_submit_button("Update Event Details")
-                    with b_del:
-                        delete_ev = st.form_submit_button("Delete Event")
+                        b_save, b_del = st.columns(2)
+                        with b_save:
+                            update_ev = st.form_submit_button("Update Event Details")
+                        with b_del:
+                            delete_ev = st.form_submit_button("Delete Event")
 
-                    if update_ev:
-                        cursor = conn.cursor()
-                        cursor.execute("""
-                        UPDATE events SET venue = ?, time = ?, description = ? WHERE id = ?;
-                        """, (new_venue, new_time, new_desc, del_ev_id))
-                        conn.commit()
-                        st.success("Event details updated!")
-                        st.rerun()
+                        if update_ev:
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                            UPDATE events SET venue = ?, time = ?, description = ? WHERE id = ?;
+                            """, (new_venue, new_time, new_desc, del_ev_id))
+                            conn.commit()
+                            st.success("Event details updated!")
+                            st.rerun()
 
-                    if delete_ev:
-                        cursor = conn.cursor()
-                        cursor.execute("DELETE FROM events WHERE id = ?;", (del_ev_id,))
-                        conn.commit()
-                        st.warning("Event deleted from calendar!")
-                        st.rerun()
-            else:
-                st.info("No events to edit.")
-    else:
-        st.info(" **Admin Access Required**")
-        st.write("Switch user role to **Admin** in the sidebar to publish or modify campus events.")
+                        if delete_ev:
+                            cursor = conn.cursor()
+                            cursor.execute("DELETE FROM events WHERE id = ?;", (del_ev_id,))
+                            conn.commit()
+                            st.warning("Event deleted from calendar!")
+                            st.rerun()
+                else:
+                    st.info("No events to edit.")
+        else:
+            st.info(" **Admin Access Required**")
+            st.write("Switch user role to **Admin** in the sidebar to publish or modify campus events.")
 
 conn.close()

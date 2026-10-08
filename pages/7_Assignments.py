@@ -70,12 +70,10 @@ with a5:
 
 st.divider()
 
-tab_tasks, tab_submit, tab_analytics, tab_new = st.tabs([
-    " Assignment Board",
-    " Update Status & Submit",
-    " Performance Analytics",
-    "➕ Add New Assignment"
-])
+if role == 'Admin':
+    tab_tasks, tab_submit, tab_analytics, tab_new = st.tabs([" Assignment Board", " Update Status & Submit", " Performance Analytics", "➕ Add New Assignment"])
+else:
+    tab_tasks, tab_submit, tab_analytics = st.tabs([" Assignment Board", " Update Status & Submit", " Performance Analytics"])
 
 # --- TAB 1: ASSIGNMENT BOARD ---
 with tab_tasks:
@@ -157,18 +155,20 @@ with tab_submit:
             
             c_s1, c_s2 = st.columns(2)
             with c_s1:
-                new_stat = st.selectbox(
-                    "Update Status to:",
-                    ["Pending", "In Progress", "Submitted", "Graded"],
-                    index=["Pending", "In Progress", "Submitted", "Graded"].index(target_task["status"])
-                )
+                options = ["Pending", "In Progress", "Submitted", "Graded"] if role == "Admin" else ["Pending", "In Progress", "Submitted"]
+                idx = options.index(target_task["status"]) if target_task["status"] in options else 0
+                new_stat = st.selectbox("Update Status to:", options, index=idx)
             with c_s2:
-                marks_input = st.number_input(
-                    f"Marks Obtained (Max {target_task['max_marks']}):",
-                    min_value=0.0,
-                    max_value=float(target_task['max_marks']),
-                    value=float(target_task['marks_obtained']) if target_task['marks_obtained'] is not None else 0.0
-                )
+                if role == "Admin":
+                    marks_input = st.number_input(
+                        f"Marks Obtained (Max {target_task['max_marks']}):",
+                        min_value=0.0,
+                        max_value=float(target_task['max_marks']),
+                        value=float(target_task['marks_obtained']) if target_task['marks_obtained'] is not None else 0.0
+                    )
+                else:
+                    st.info(f"Marks (Admin only): {target_task['marks_obtained'] if target_task['marks_obtained'] is not None else 'Not Graded'}")
+                    marks_input = target_task['marks_obtained']
 
             notes_input = st.text_area(
                 "Submission Notes / Link / Repository URL:",
@@ -190,14 +190,15 @@ with tab_submit:
                 st.rerun()
 
         st.write("")
-        with st.expander("️ Delete Selected Assignment"):
-            st.warning(f"Permanently remove '{target_task['title']}'?")
-            if st.button("Confirm Delete Assignment", type="primary"):
-                cursor = conn.cursor()
-                cursor.execute("DELETE FROM assignments WHERE id = ?;", (selected_task_id,))
-                conn.commit()
-                st.warning("Assignment deleted successfully!")
-                st.rerun()
+        if role == "Admin":
+            with st.expander("️ Delete Selected Assignment"):
+                st.warning(f"Permanently remove '{target_task['title']}'?")
+                if st.button("Confirm Delete Assignment", type="primary"):
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM assignments WHERE id = ?;", (selected_task_id,))
+                    conn.commit()
+                    st.warning("Assignment deleted successfully!")
+                    st.rerun()
     else:
         st.info("No assignments available to update.")
 
@@ -244,35 +245,36 @@ with tab_analytics:
         st.info("No graded assignments recorded yet.")
 
 # --- TAB 4: ADD NEW ASSIGNMENT ---
-with tab_new:
-    st.subheader("➕ Create New Coursework or Laboratory Assignment")
-    
-    subjects_df = pd.read_sql_query("SELECT id, code, name FROM subjects ORDER BY code;", conn)
-    sub_choices = {f"{s['code']} - {s['name']}": s['id'] for _, s in subjects_df.iterrows()}
-
-    with st.form("create_assign_form", clear_on_submit=True):
-        sel_sub_name = st.selectbox("Subject:", list(sub_choices.keys()))
-        new_title = st.text_input("Assignment Title:", placeholder="e.g. Implement B-Tree Indexing in C++")
-        new_desc = st.text_area("Task Description & Submission Guidelines:")
+if role == 'Admin':
+    with tab_new:
+        st.subheader("➕ Create New Coursework or Laboratory Assignment")
         
-        c_d1, c_d2 = st.columns(2)
-        with c_d1:
-            new_due = st.date_input("Due Date:", value=today_dt.date())
-        with c_d2:
-            new_max_marks = st.number_input("Maximum Marks:", min_value=10, max_value=200, value=100)
+        subjects_df = pd.read_sql_query("SELECT id, code, name FROM subjects ORDER BY code;", conn)
+        sub_choices = {f"{s['code']} - {s['name']}": s['id'] for _, s in subjects_df.iterrows()}
 
-        create_btn = st.form_submit_button("Add Assignment")
-        if create_btn:
-            if not new_title:
-                st.error("Title is required.")
-            else:
-                cursor = conn.cursor()
-                cursor.execute("""
-                INSERT INTO assignments (subject_id, title, description, due_date, max_marks, status)
-                VALUES (?, ?, ?, ?, ?, 'Pending');
-                """, (sub_choices[sel_sub_name], new_title, new_desc, new_due.strftime("%Y-%m-%d"), new_max_marks))
-                conn.commit()
-                st.success("New assignment added to schedule!")
-                st.rerun()
+        with st.form("create_assign_form", clear_on_submit=True):
+            sel_sub_name = st.selectbox("Subject:", list(sub_choices.keys()))
+            new_title = st.text_input("Assignment Title:", placeholder="e.g. Implement B-Tree Indexing in C++")
+            new_desc = st.text_area("Task Description & Submission Guidelines:")
+            
+            c_d1, c_d2 = st.columns(2)
+            with c_d1:
+                new_due = st.date_input("Due Date:", value=today_dt.date())
+            with c_d2:
+                new_max_marks = st.number_input("Maximum Marks:", min_value=10, max_value=200, value=100)
+
+            create_btn = st.form_submit_button("Add Assignment")
+            if create_btn:
+                if not new_title:
+                    st.error("Title is required.")
+                else:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                    INSERT INTO assignments (subject_id, title, description, due_date, max_marks, status)
+                    VALUES (?, ?, ?, ?, ?, 'Pending');
+                    """, (sub_choices[sel_sub_name], new_title, new_desc, new_due.strftime("%Y-%m-%d"), new_max_marks))
+                    conn.commit()
+                    st.success("New assignment added to schedule!")
+                    st.rerun()
 
 conn.close()

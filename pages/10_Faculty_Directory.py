@@ -46,11 +46,10 @@ with f4:
 
 st.divider()
 
-tab_directory, tab_consult, tab_admin = st.tabs([
-    " Faculty Profiles",
-    " Request Office Consultation",
-    "⚙️ Manage Faculty (Admin)"
-])
+if role == 'Admin':
+    tab_directory, tab_consult, tab_admin = st.tabs([" Faculty Profiles", " Request Office Consultation", "⚙️ Manage Faculty (Admin)"])
+else:
+    tab_directory, tab_consult = st.tabs([" Faculty Profiles", " Request Office Consultation"])
 
 # --- TAB 1: FACULTY PROFILES ---
 with tab_directory:
@@ -115,56 +114,57 @@ with tab_consult:
         st.info("No faculty profiles registered yet.")
 
 # --- TAB 3: MANAGE FACULTY (ADMIN) ---
-with tab_admin:
-    if role == "Admin":
-        st.subheader(" Master Faculty Records Management")
-        st.write("Register new faculty appointments or update cabin allocations.")
+if role == 'Admin':
+    with tab_admin:
+        if role == "Admin":
+            st.subheader(" Master Faculty Records Management")
+            st.write("Register new faculty appointments or update cabin allocations.")
 
-        col_add_f, col_del_f = st.columns([1, 1], gap="large")
+            col_add_f, col_del_f = st.columns([1, 1], gap="large")
 
-        with col_add_f:
-            st.markdown("#### ➕ Add Faculty Profile")
-            with st.form("add_faculty_form", clear_on_submit=True):
-                f_name = st.text_input("Full Name (with Prefix):", placeholder="e.g. Dr. Raghavendra Rao")
-                f_dept = st.selectbox("Department:", ["Computer Science", "Mathematics", "Electronics", "Humanities", "Management", "Mechanical", "Civil"])
-                f_desig = st.selectbox("Designation:", ["Professor", "Associate Professor", "Assistant Professor", "Professor & HOD", "Adjunct Professor"])
-                f_email = st.text_input("Email:", placeholder="raghavendra.rao@campus.edu")
-                f_phone = st.text_input("Phone:", value="+91 98765 43230")
-                f_room = st.text_input("Cabin Location:", value="Block-C 315")
-                f_hours = st.text_input("Consultation Hours:", value="Tue & Thu 2:00 PM - 4:00 PM")
-                f_subjs = st.text_area("Subjects / Areas Taught:", placeholder="e.g. Distributed Computing, Cloud Systems")
+            with col_add_f:
+                st.markdown("#### ➕ Add Faculty Profile")
+                with st.form("add_faculty_form", clear_on_submit=True):
+                    f_name = st.text_input("Full Name (with Prefix):", placeholder="e.g. Dr. Raghavendra Rao")
+                    f_dept = st.selectbox("Department:", ["Computer Science", "Mathematics", "Electronics", "Humanities", "Management", "Mechanical", "Civil"])
+                    f_desig = st.selectbox("Designation:", ["Professor", "Associate Professor", "Assistant Professor", "Professor & HOD", "Adjunct Professor"])
+                    f_email = st.text_input("Email:", placeholder="raghavendra.rao@campus.edu")
+                    f_phone = st.text_input("Phone:", value="+91 98765 43230")
+                    f_room = st.text_input("Cabin Location:", value="Block-C 315")
+                    f_hours = st.text_input("Consultation Hours:", value="Tue & Thu 2:00 PM - 4:00 PM")
+                    f_subjs = st.text_area("Subjects / Areas Taught:", placeholder="e.g. Distributed Computing, Cloud Systems")
 
-                add_f_btn = st.form_submit_button("Register Faculty")
-                if add_f_btn:
-                    if not f_name or not f_email:
-                        st.error("Name and email are required.")
-                    else:
+                    add_f_btn = st.form_submit_button("Register Faculty")
+                    if add_f_btn:
+                        if not f_name or not f_email:
+                            st.error("Name and email are required.")
+                        else:
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                            INSERT INTO faculty (name, department, designation, email, phone, room, cabin_hours, subjects_taught)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                            """, (f_name, f_dept, f_desig, f_email, f_phone, f_room, f_hours, f_subjs))
+                            conn.commit()
+                            st.success(f"Faculty member {f_name} registered successfully!")
+                            st.rerun()
+
+            with col_del_f:
+                st.markdown("#### ️ Delete Faculty Record")
+                if not faculty_df.empty:
+                    del_f_map = {f"#{r['id']} {r['name']} ({r['department']})": r['id'] for _, r in faculty_df.iterrows()}
+                    sel_del_f = st.selectbox("Select Faculty to Remove:", list(del_f_map.keys()))
+                    del_target_fid = del_f_map[sel_del_f]
+
+                    if st.button("Delete Faculty Record", type="primary"):
                         cursor = conn.cursor()
-                        cursor.execute("""
-                        INSERT INTO faculty (name, department, designation, email, phone, room, cabin_hours, subjects_taught)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-                        """, (f_name, f_dept, f_desig, f_email, f_phone, f_room, f_hours, f_subjs))
+                        cursor.execute("DELETE FROM faculty WHERE id = ?;", (del_target_fid,))
                         conn.commit()
-                        st.success(f"Faculty member {f_name} registered successfully!")
+                        st.warning("Faculty member removed from directory!")
                         st.rerun()
-
-        with col_del_f:
-            st.markdown("#### ️ Delete Faculty Record")
-            if not faculty_df.empty:
-                del_f_map = {f"#{r['id']} {r['name']} ({r['department']})": r['id'] for _, r in faculty_df.iterrows()}
-                sel_del_f = st.selectbox("Select Faculty to Remove:", list(del_f_map.keys()))
-                del_target_fid = del_f_map[sel_del_f]
-
-                if st.button("Delete Faculty Record", type="primary"):
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM faculty WHERE id = ?;", (del_target_fid,))
-                    conn.commit()
-                    st.warning("Faculty member removed from directory!")
-                    st.rerun()
-            else:
-                st.info("No faculty to delete.")
-    else:
-        st.info(" **Admin Access Required**")
-        st.write("Switch user role to **Admin** in the sidebar to add or remove faculty records.")
+                else:
+                    st.info("No faculty to delete.")
+        else:
+            st.info(" **Admin Access Required**")
+            st.write("Switch user role to **Admin** in the sidebar to add or remove faculty records.")
 
 conn.close()

@@ -39,12 +39,10 @@ ORDER BY s.code, cs.day_of_week;
 """
 sched_rooms_df = pd.read_sql_query(sched_rooms_query, conn)
 
-tab_finder, tab_map, tab_directory, tab_manage = st.tabs([
-    " Find My Class / Room",
-    "️ Interactive 2D Campus Map",
-    " Floor-by-Floor Directory",
-    "⚙️ Manage Room Directory"
-])
+if role == 'Admin':
+    tab_finder, tab_map, tab_directory, tab_manage = st.tabs([" Find My Class / Room", "️ Interactive 2D Campus Map", " Floor-by-Floor Directory", "⚙️ Manage Room Directory"])
+else:
+    tab_finder, tab_map, tab_directory = st.tabs([" Find My Class / Room", "️ Interactive 2D Campus Map", " Floor-by-Floor Directory"])
 
 # --- TAB 1: FIND MY CLASS / ROOM ---
 with tab_finder:
@@ -217,61 +215,62 @@ with tab_directory:
                         st.caption(f"Directions: {r['directions']}")
 
 # --- TAB 4: MANAGE ROOM DIRECTORY (ADMIN ONLY) ---
-with tab_manage:
-    if role == "Admin":
-        st.subheader(" Master Building & Room Management")
-        st.write("Add new classrooms, update wayfinding directions, or configure landmarks.")
+if role == 'Admin':
+    with tab_manage:
+        if role == "Admin":
+            st.subheader(" Master Building & Room Management")
+            st.write("Add new classrooms, update wayfinding directions, or configure landmarks.")
 
-        col_a1, col_a2 = st.columns([1, 1], gap="large")
+            col_a1, col_a2 = st.columns([1, 1], gap="large")
 
-        with col_a1:
-            st.markdown("#### ➕ Add New Venue Entry")
-            with st.form("add_room_form", clear_on_submit=True):
-                new_block = st.selectbox("Block Name:", unique_blocks + ["Block-H (New Annexe)"])
-                new_room_no = st.text_input("Room Number / Label:", placeholder="e.g. Block-C 401")
-                new_type = st.selectbox("Room Type:", ["Classroom", "Laboratory", "Faculty Cabin", "Seminar Hall", "Library", "Cafeteria", "Sports", "Admin"])
-                new_floor = st.selectbox("Floor Level:", ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor", "4th Floor"])
-                new_cap = st.number_input("Seating Capacity:", min_value=5, max_value=1000, value=60)
-                new_landmark = st.text_input("Nearest Landmark:", placeholder="e.g. Next to Machine Learning Lab")
-                new_directions = st.text_area("Walking Directions:", placeholder="e.g. Enter Block C north entrance, take stairs to 4th floor.")
-                
-                c_x1, c_x2 = st.columns(2)
-                with c_x1:
-                    new_cx = st.number_input("Map Coordinate X (0-100):", value=65.0)
-                with c_x2:
-                    new_cy = st.number_input("Map Coordinate Y (0-100):", value=40.0)
+            with col_a1:
+                st.markdown("#### ➕ Add New Venue Entry")
+                with st.form("add_room_form", clear_on_submit=True):
+                    new_block = st.selectbox("Block Name:", unique_blocks + ["Block-H (New Annexe)"])
+                    new_room_no = st.text_input("Room Number / Label:", placeholder="e.g. Block-C 401")
+                    new_type = st.selectbox("Room Type:", ["Classroom", "Laboratory", "Faculty Cabin", "Seminar Hall", "Library", "Cafeteria", "Sports", "Admin"])
+                    new_floor = st.selectbox("Floor Level:", ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor", "4th Floor"])
+                    new_cap = st.number_input("Seating Capacity:", min_value=5, max_value=1000, value=60)
+                    new_landmark = st.text_input("Nearest Landmark:", placeholder="e.g. Next to Machine Learning Lab")
+                    new_directions = st.text_area("Walking Directions:", placeholder="e.g. Enter Block C north entrance, take stairs to 4th floor.")
+                    
+                    c_x1, c_x2 = st.columns(2)
+                    with c_x1:
+                        new_cx = st.number_input("Map Coordinate X (0-100):", value=65.0)
+                    with c_x2:
+                        new_cy = st.number_input("Map Coordinate Y (0-100):", value=40.0)
 
-                submitted_room = st.form_submit_button("Register Venue")
-                if submitted_room:
-                    if not new_room_no:
-                        st.error("Room number is required.")
-                    else:
+                    submitted_room = st.form_submit_button("Register Venue")
+                    if submitted_room:
+                        if not new_room_no:
+                            st.error("Room number is required.")
+                        else:
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                            INSERT INTO buildings_rooms (block_name, room_number, room_type, floor, capacity, landmark, directions, coord_x, coord_y)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                            """, (new_block, new_room_no, new_type, new_floor, new_cap, new_landmark, new_directions, new_cx, new_cy))
+                            conn.commit()
+                            st.success(f"Room '{new_room_no}' added to campus directory!")
+                            st.rerun()
+
+            with col_a2:
+                st.markdown("#### ️ Remove / Delete Room Entry")
+                if not rooms_df.empty:
+                    room_opts = {f"{r['room_number']} ({r['block_name']})": r['id'] for _, r in rooms_df.iterrows()}
+                    selected_del_room = st.selectbox("Select Venue to Delete:", list(room_opts.keys()))
+                    target_del_id = room_opts[selected_del_room]
+
+                    if st.button("Delete Room Entry", type="primary"):
                         cursor = conn.cursor()
-                        cursor.execute("""
-                        INSERT INTO buildings_rooms (block_name, room_number, room_type, floor, capacity, landmark, directions, coord_x, coord_y)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-                        """, (new_block, new_room_no, new_type, new_floor, new_cap, new_landmark, new_directions, new_cx, new_cy))
+                        cursor.execute("DELETE FROM buildings_rooms WHERE id = ?;", (target_del_id,))
                         conn.commit()
-                        st.success(f"Room '{new_room_no}' added to campus directory!")
+                        st.warning("Venue entry deleted from database!")
                         st.rerun()
-
-        with col_a2:
-            st.markdown("#### ️ Remove / Delete Room Entry")
-            if not rooms_df.empty:
-                room_opts = {f"{r['room_number']} ({r['block_name']})": r['id'] for _, r in rooms_df.iterrows()}
-                selected_del_room = st.selectbox("Select Venue to Delete:", list(room_opts.keys()))
-                target_del_id = room_opts[selected_del_room]
-
-                if st.button("Delete Room Entry", type="primary"):
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM buildings_rooms WHERE id = ?;", (target_del_id,))
-                    conn.commit()
-                    st.warning("Venue entry deleted from database!")
-                    st.rerun()
-            else:
-                st.info("No venues to delete.")
-    else:
-        st.info(" **Admin Access Required**")
-        st.write("Switch role to **Admin** in the sidebar to register new campus venues.")
+                else:
+                    st.info("No venues to delete.")
+        else:
+            st.info(" **Admin Access Required**")
+            st.write("Switch role to **Admin** in the sidebar to register new campus venues.")
 
 conn.close()
